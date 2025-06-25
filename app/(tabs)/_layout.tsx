@@ -1,6 +1,3 @@
-import { Tabs } from 'expo-router';
-import React, { useState } from 'react';
-import { Platform, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
@@ -8,18 +5,43 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Feather } from '@expo/vector-icons';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Image } from 'expo-image';
+import { useFonts } from 'expo-font';
+import { Tabs } from 'expo-router';
 import * as SystemUI from 'expo-system-ui';
+import React, { useState } from 'react';
+import { Platform, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import {
+  PlayfairDisplay_700Bold,
+} from '@expo-google-fonts/playfair-display';
+
+import {
+  Poppins_400Regular,
+  Poppins_600SemiBold,
+} from '@expo-google-fonts/poppins';
+
+import {
+  Inter_400Regular,
+} from '@expo-google-fonts/inter';
+
+
+
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const [theme, setTheme] = useState(true)
   SystemUI.setBackgroundColorAsync(!theme ? Colors.dark.background : Colors.light.background );
+  const [fontsLoaded] = useFonts({
+    Poppins_400Regular,
+    Poppins_600SemiBold,
+    Inter_400Regular,
+    PlayfairDisplay_700Bold,
+  });
 
   return (
     <SafeAreaProvider >
-      <StatusBar barStyle={!theme ? 'light-content' : 'dark-content'} translucent backgroundColor="transparent" />
+      <StatusBar barStyle={!theme ? 'light-content' : 'dark-content'} translucent />
 
     <View style={{ flex: 1, backgroundColor: !theme? Colors.dark.background:Colors.light.background, paddingTop: 40 }}>
       <ThemeProvider value={!theme ? DarkTheme : DefaultTheme}>
@@ -28,33 +50,33 @@ export default function TabLayout() {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'space-around',
+          justifyContent: 'space-evenly',
           paddingHorizontal: 16,
           marginBottom: 5,
         }}
       >
-        <View >
+        {/* <View >
         <Image
           source={require('@/assets/IIT-Kanpur.png')} // or your actual image path
           style={{ width: 55, height: 55 }}
           resizeMode="contain"
           />
-        </View>
+        </View> */}
         <Text
           style={{
             color: !theme ? '#fff' : '#000',
             fontSize: 27,
-            fontWeight: 'bold',
             alignItems:'center',
+            fontFamily: 'PlayfairDisplay_700Bold',            
           }}
         >
-          Visitors Hostel
+          Visitor's Hostel
         </Text>
 
         <TouchableOpacity
           onPress={() => setTheme(!theme)}
           style={{
-            backgroundColor: theme ? '#e5e5e5':'#444',
+            // backgroundColor: theme ? '#e5e5e5':'#444',
             padding: 10,
             borderRadius: 30,
           }}

@@ -142,19 +142,15 @@
 
 
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme } from '@react-navigation/native';
 import { Colors } from '@/constants/Colors';
+import { getWeeklyMenu, WeeklyMenu } from '@/utils/menuUtils';
+import { useTheme } from '@react-navigation/native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 type MealKey = 'breakfast' | 'lunch' | 'dinner';
-type MealDetails = { description: string; price: number; coupons: number };
-type WeeklyMenu = Record<string, Record<MealKey, MealDetails>>;
-
-const MENU_KEY = 'weeklyMenu';
-const EXPIRY_KEY = 'weeklyMenuExpiry';
-const EXPIRY_DAYS = 3;
+// type MealDetails = { description: string; price: number; };
+// type WeeklyMenu = Record<string, Record<MealKey, MealDetails>>;
 
 export default function ExploreScreen() {
 
@@ -163,6 +159,12 @@ export default function ExploreScreen() {
   const styles = useMemo(() => createStyles(mode), [mode]);
   const [menuData, setMenuData] = useState<WeeklyMenu | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const mealImages = {
+  breakfast: require('../../assets/images/breakfast.jpg'),
+  lunch: require('../../assets/images/lunch.jpg'),
+  dinner: require('../../assets/images/dinner.jpg'),
+  };
 
   
   useEffect(() => {
@@ -170,41 +172,16 @@ export default function ExploreScreen() {
   }, []);
   const loadMenu = async () => {
     try {
-      const [storedMenu, storedExpiry] = await AsyncStorage.multiGet([
-        MENU_KEY,
-        EXPIRY_KEY,
-      ]);
-      const now = Date.now();
-      const expiryTime = storedExpiry[1] ? parseInt(storedExpiry[1], 10) : 0;
+      const menu = await getWeeklyMenu();
+      setMenuData(menu);
 
-      if (storedMenu[1] && now < expiryTime) {
-        setMenuData(JSON.parse(storedMenu[1]));
-        setLoading(false);
-        return;
-      }
-      const freshMenu = await fetchWeeklyMenuFromServer();
-
-      await AsyncStorage.multiSet([
-        [MENU_KEY, JSON.stringify(freshMenu)],
-        [
-          EXPIRY_KEY,
-          (now + EXPIRY_DAYS * 24 * 60 * 60 * 1000).toString(),
-        ],
-      ]);
-
-      setMenuData(freshMenu);
     } catch (err) {
-      console.error('Failed to load menu:', err);
+      console.error('Error loading menu in ExploreScreen:', err);
     } finally {
       setLoading(false);
     }
   };
-
-  const fetchWeeklyMenuFromServer = async (): Promise<WeeklyMenu> => {
-    return new Promise<WeeklyMenu>((resolve) => {
-      setTimeout(() => resolve({}), 1000);
-    });
-  };
+  
  if (loading) {
     return (
       <View style={styles.container}>
@@ -234,6 +211,8 @@ export default function ExploreScreen() {
                 (mealKey, idx) => (
                   <React.Fragment key={mealKey}>
                     <View style={styles.row}>
+                      <Image source={mealKey=='breakfast'? mealImages.breakfast: mealKey=='lunch' ? mealImages.lunch: mealImages.dinner}style={styles.image}>                      
+                    </Image>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.label}>
                           {mealKey.charAt(0).toUpperCase() + mealKey.slice(1)}
@@ -246,9 +225,6 @@ export default function ExploreScreen() {
                       <View style={styles.priceContainer}>
                         <Text style={styles.price}>
                           ₹{meals[mealKey].price}
-                        </Text>
-                        <Text style={styles.coupons}>
-                          {meals[mealKey].coupons} Coupon
                         </Text>
                       </View>
                     </View>
@@ -270,13 +246,11 @@ function createStyles(mode: 'light' | 'dark') {
       flex: 1,
       paddingHorizontal: 16,
       paddingTop: 20,
-      backgroundColor: isDark
-        ? Colors.dark.background
-        : Colors.light.background,
+      backgroundColor: isDark ? Colors.dark.background : Colors.light.background,
     },
     heading: {
       fontSize: 26,
-      fontWeight: '700',
+      fontFamily: 'Poppins_600SemiBold',
       marginBottom: 14,
       textAlign: 'center',
       color: isDark ? Colors.dark.text : Colors.light.text,
@@ -294,7 +268,7 @@ function createStyles(mode: 'light' | 'dark') {
     },
     day: {
       fontSize: 22,
-      fontWeight: '600',
+      fontFamily: 'Poppins_600SemiBold',
       marginBottom: 10,
       color: isDark ? Colors.dark.heading : Colors.light.heading,
     },
@@ -305,13 +279,14 @@ function createStyles(mode: 'light' | 'dark') {
       marginBottom: 6,
     },
     label: {
-      fontWeight: '600',
+      fontFamily: 'Poppins_600SemiBold',
       fontSize: 16,
       marginBottom: 2,
       color: isDark ? Colors.dark.text : Colors.light.text,
     },
     desc: {
       fontSize: 15,
+      fontFamily: 'Inter_400Regular',
       color: isDark ? Colors.dark.mealDescription : Colors.light.mealDescription,
     },
     priceContainer: {
@@ -321,18 +296,18 @@ function createStyles(mode: 'light' | 'dark') {
     },
     price: {
       fontSize: 16,
-      fontWeight: '600',
+      fontFamily: 'OpenSans_400Regular',
       color: isDark ? Colors.dark.mealPrice : Colors.light.mealPrice,
-    },
-    coupons: {
-      fontSize: 12,
-      color: isDark ? Colors.dark.coupon : Colors.light.coupon,
-      marginTop: 2,
     },
     divider: {
       height: 1,
       backgroundColor: isDark ? Colors.dark.divider : Colors.light.divider,
       marginVertical: 8,
+    },
+    image: {
+      width: 45,
+      height: 50,
+      borderRadius: 10,
     },
   });
 }

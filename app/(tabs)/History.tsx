@@ -30,13 +30,18 @@
 //     "cost": 30
 //   }
 // ]
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useTheme } from '@react-navigation/native';
 import { Colors } from '@/constants/Colors';
+import { addDummyBookingHistory } from '@/utils/addDummyBookingHistory';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '@react-navigation/native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import React, { useEffect, useState } from 'react';
+import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+
+
+
 
 type Meal = {
   id: string;
@@ -53,6 +58,10 @@ export default function History() {
   const styles = createStyles(mode);
 
   const [history, setHistory] = useState<Meal[]>([]);
+  useEffect(() => {
+  addDummyBookingHistory();
+}, []);
+
 
   useEffect(() => {
     (async () => {
@@ -180,13 +189,13 @@ function createStyles(mode: 'dark' | 'light') {
     listContent: { padding: 16 },
     heading: {
       fontSize: 26,
-      fontWeight: '700',
+      fontFamily: 'Poppins_600SemiBold',
       marginBottom: 14,
       textAlign: 'center',
       color: isDark ? Colors.dark.text : Colors.light.text,
     },
     card: {
-      backgroundColor: isDark ? Colors.dark.background : Colors.light.background,
+      backgroundColor: isDark ? Colors.dark.card : Colors.light.card,
       borderRadius: 10,
       padding: 16,
       marginBottom: 12,
@@ -201,9 +210,28 @@ function createStyles(mode: 'dark' | 'light') {
       justifyContent: 'space-between',
       alignItems: 'center',
     },
-    meal: { fontSize: 18, fontWeight: '600', color: isDark ? Colors.dark.text : Colors.light.text },
-    cost: { fontSize: 16, fontWeight: '700', color: isDark ? Colors.dark.tint : Colors.light.tint },
-    date: { marginTop: 4, fontSize: 14, color: isDark ? Colors.dark.icon : Colors.light.icon },
-    id: { marginTop: 2, fontSize: 12, color: isDark ? Colors.dark.tabIconDefault : Colors.light.tabIconDefault },
+    meal: {
+      fontSize: 18,
+      fontFamily: 'Poppins_600SemiBold',
+      color: isDark ? Colors.dark.text : Colors.light.text,
+    },
+    cost: {
+      fontSize: 16,
+      fontFamily: 'Inter_400Regular',
+      fontWeight: '700',
+      color: isDark ? Colors.dark.tint : Colors.light.tint,
+    },
+    date: {
+      marginTop: 4,
+      fontSize: 14,
+      fontFamily: 'Inter_400Regular',
+      color: isDark ? Colors.dark.icon : Colors.light.icon,
+    },
+    id: {
+      marginTop: 2,
+      fontSize: 12,
+      fontFamily: 'Inter_400Regular',
+      color: isDark ? Colors.dark.tabIconDefault : Colors.light.tabIconDefault,
+    },
   });
 }

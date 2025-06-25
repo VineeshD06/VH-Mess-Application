@@ -1,4 +1,7 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { Colors } from '@/constants/Colors';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTheme } from "@react-navigation/native";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Button,
@@ -9,9 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTheme } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Colors } from '@/constants/Colors';
 
 
 type MealKey = "breakfast" | "lunch" | "dinner";
@@ -22,13 +22,13 @@ type Booking = Record<string, Record<MealKey, number>>;
 
 const MENU_KEY = "weeklyMenu";
 const days = [
-  "Sunday",
   "Monday",
   "Tuesday",
   "Wednesday",
   "Thursday",
   "Friday",
   "Saturday",
+  "Sunday",
 ];
 
 export default function BookingScreen() {
@@ -203,7 +203,7 @@ export default function BookingScreen() {
         })}
 
         <View style={styles.totalContainer}>
-          <Text style={styles.totalText}>Total Price: ₹{calculateTotalPrice()}</Text>
+          <Text style={styles.totalText}>Total Price:=: ₹{calculateTotalPrice()}</Text>
         </View>
         <View style={styles.submitContainer}>
           <Button title="Submit" onPress={showConfirmationAlert} />
@@ -225,11 +225,13 @@ function createStyles(isDark: boolean) {
       marginBottom: 8,
       color: isDark ? Colors.dark.notice : Colors.light.notice,
       textAlign: "center",
+      fontFamily: 'OpenSans_400Regular',
     },
     heading: {
       fontSize: 24,
-      fontWeight: "700",
+      fontFamily: 'Poppins_600SemiBold',
       marginBottom: 12,
+      textAlign:'center',
       color: isDark ? Colors.dark.text : Colors.light.text,
     },
     daySection: {
@@ -240,11 +242,12 @@ function createStyles(isDark: boolean) {
     },
     dayTitle: {
       fontSize: 20,
-      fontWeight: "bold",
+      fontFamily: 'Poppins_600SemiBold',
       color: isDark ? Colors.dark.dayTitle : Colors.light.dayTitle,
     },
     deadlineNote: {
       fontSize: 12,
+      fontFamily: 'OpenSans_400Regular',
       color: isDark ? Colors.dark.deadlineNote : Colors.light.deadlineNote,
       marginTop: 4,
     },
@@ -259,21 +262,23 @@ function createStyles(isDark: boolean) {
     },
     mealLabel: {
       fontSize: 16,
-      fontWeight: "bold",
+      fontFamily: 'Poppins_600SemiBold',
       color: isDark ? Colors.dark.mealLabel : Colors.light.mealLabel,
     },
     mealDescription: {
       fontSize: 12,
+      fontFamily: 'OpenSans_400Regular',
       color: isDark ? Colors.dark.mealDescription : Colors.light.mealDescription,
       marginBottom: 2,
     },
     mealPrice: {
       fontSize: 13,
+      fontFamily: 'Inter_400Regular',
       color: isDark ? Colors.dark.mealPrice : Colors.light.mealPrice,
-      fontWeight: "bold",
     },
     coupon: {
       fontSize: 12,
+      fontFamily: 'OpenSans_400Regular',
       color: isDark ? Colors.dark.coupon : Colors.light.coupon,
     },
     counterContainer: {
@@ -285,17 +290,19 @@ function createStyles(isDark: boolean) {
       fontSize: 20,
       width: 30,
       textAlign: "center",
+      fontFamily: 'Inter_400Regular',
       color: isDark ? Colors.dark.text : Colors.light.text,
     },
     counterText: {
       fontSize: 16,
       width: 30,
       textAlign: "center",
+      fontFamily: 'Inter_400Regular',
       color: isDark ? Colors.dark.text : Colors.light.text,
     },
     closedLabel: {
+      fontFamily: 'Poppins_600SemiBold',
       color: isDark ? Colors.dark.closedLabel : Colors.light.closedLabel,
-      fontWeight: "bold",
     },
     totalContainer: {
       marginTop: 20,
@@ -306,7 +313,7 @@ function createStyles(isDark: boolean) {
     },
     totalText: {
       fontSize: 16,
-      fontWeight: "bold",
+      fontFamily: 'OpenSans_400Regular',
       color: isDark ? Colors.dark.text : Colors.light.text,
     },
     submitContainer: {

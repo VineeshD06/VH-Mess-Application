@@ -35,11 +35,12 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
-          "image": "./assets/IIT-Kanpur.png",
-          "backgroundColor": "#0f172a"
+            "image": "./assets/IIT-Kanpur.png",
+            "backgroundColor": "#0f172a"
           }
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
