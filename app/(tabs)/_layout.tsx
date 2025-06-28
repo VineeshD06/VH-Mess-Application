@@ -41,7 +41,7 @@ export default function TabLayout() {
 
   return (
     <SafeAreaProvider >
-      <StatusBar barStyle={!theme ? 'light-content' : 'dark-content'} translucent />
+      <StatusBar barStyle={!theme ? 'light-content' : 'dark-content'} translucent backgroundColor="rgba(0,0,0,0.5)" />
 
     <View style={{ flex: 1, backgroundColor: !theme? Colors.dark.background:Colors.light.background, paddingTop: 40 }}>
       <ThemeProvider value={!theme ? DarkTheme : DefaultTheme}>
@@ -132,6 +132,8 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen name="booking" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+        <Tabs.Screen name="payment" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+        <Tabs.Screen name="success/[paymentId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       </Tabs>
       </ThemeProvider>
     </View>

@@ -58,9 +58,9 @@ export default function History() {
   const styles = createStyles(mode);
 
   const [history, setHistory] = useState<Meal[]>([]);
-  useEffect(() => {
-  addDummyBookingHistory();
-}, []);
+//   useEffect(() => {
+//   addDummyBookingHistory();
+// }, []);
 
 
   useEffect(() => {

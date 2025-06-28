@@ -1,6 +1,7 @@
 import { Colors } from '@/constants/Colors';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "@react-navigation/native";
+import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -12,12 +13,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 type MealKey = "breakfast" | "lunch" | "dinner";
 type MealDetails = { description: string; price: number; coupons: number };
 type WeeklyMenu = Record<string, Record<MealKey, MealDetails>>;
 type Booking = Record<string, Record<MealKey, number>>;
+
 
 
 const MENU_KEY = "weeklyMenu";
@@ -34,6 +37,7 @@ const days = [
 export default function BookingScreen() {
   const isDark = useTheme().dark;
   const styles = useMemo(() => createStyles(isDark), [isDark]);
+  const router = useRouter();
 
   const [menuData, setMenuData] = useState<WeeklyMenu | null>(null);
   const [bookings, setBookings] = useState<Booking>({});
@@ -103,17 +107,19 @@ export default function BookingScreen() {
 
   const handleSubmit = () => {
     const total = calculateTotalPrice();
-    Alert.alert(
-      "Booking Submitted",
-      `${JSON.stringify(bookings, null, 2)}\nTotal Price: ₹${total}`
-    );
+
+    router.push({
+      pathname:'/payment',
+      params: { total: total.toString() , bookings:JSON.stringify(bookings)},
+
+    });
   };
 
   const showConfirmationAlert = () => {
     setTimeout(() => {
       Alert.alert(
-        "Confirm Submission",
-        "Are you sure you want to submit?",
+        "Confirm Order",
+        "Proceed to Payment?",
         [
           { text: "Cancel", style: "cancel" },
           { text: "Submit", onPress: handleSubmit },
@@ -131,10 +137,12 @@ export default function BookingScreen() {
     );
 
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container}>
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
+      <ScrollView style={[
+            styles.container,
+            { flexGrow: 1, paddingBottom: 80 }]}>
         <Text style={styles.notice}>
-          Book today before cut‑off times, or any time for future days. Past days are locked.
+          Book today before cut-off times, or any time for future days. Past days are locked.
         </Text>
         <Text style={styles.heading}>Book Your Meals</Text>
 
@@ -205,11 +213,16 @@ export default function BookingScreen() {
         <View style={styles.totalContainer}>
           <Text style={styles.totalText}>Total Price:=: ₹{calculateTotalPrice()}</Text>
         </View>
-        <View style={styles.submitContainer}>
-          <Button title="Submit" onPress={showConfirmationAlert} />
+        <View style={[styles.submitContainer,{marginBottom:10}]}>
+          <TouchableOpacity style={styles.button} onPress={()=>{router.push('/(tabs)');}}>
+          <Text style={styles.buttonText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.button,(calculateTotalPrice()==0) && styles.buttonDisabled]} disabled={calculateTotalPrice()==0} onPress={showConfirmationAlert}>
+          <Text style={styles.buttonText}>Proceed to Payment</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -317,8 +330,34 @@ function createStyles(isDark: boolean) {
       color: isDark ? Colors.dark.text : Colors.light.text,
     },
     submitContainer: {
-      marginTop: 16,
-      marginBottom: 50,
+      marginTop: 10,
+      marginBottom: 10,
+      flex:1,
     },
+    button: {
+    backgroundColor: '#3399cc',     // primary color
+    paddingVertical: 12,            // vertical padding
+    paddingHorizontal: 20,          // horizontal padding
+    borderRadius: 10,               // rounded corners
+    alignItems: 'center',           // center text
+    justifyContent: 'center',
+    marginVertical: 8,              // vertical spacing between buttons
+    elevation: 2,                   // subtle shadow (Android)
+    shadowColor: '#000',            // subtle shadow (iOS)
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  buttonDisabled: {
+    backgroundColor: '#a0a0a0',         // greyed out
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',              // semi-bold
+    fontFamily: 'Poppins_600SemiBold', // optional custom font
+  },
   });
 }
