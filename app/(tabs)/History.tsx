@@ -66,7 +66,7 @@ export default function History() {
   useEffect(() => {
     (async () => {
       try {
-        const stored = await AsyncStorage.getItem('bookingHistory');
+        const stored = await AsyncStorage.getItem('transactions');
         if (stored) setHistory(JSON.parse(stored));
       } catch (err) {
         console.error('Failed to load history:', err);

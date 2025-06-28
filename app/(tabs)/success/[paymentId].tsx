@@ -10,14 +10,18 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 type Transaction = {
   id: string;
   date: string;
   meal: string;
   cost: number;
-  receiptUrl: string;
+
+  day: string; // Add day for history display
 };
 
 type Item = { day: string; meal: string; qty: number };
@@ -37,17 +41,122 @@ export default function Success() {
   /* ── save each item as a transaction coupon ─────────── */
   useEffect(() => {
     (async () => {
+      // Save each booked item as a separate transaction for history
       const transactions: Transaction[] = itemArr.map((it) => ({
         id: paymentId,
         date: new Date().toISOString().slice(0, 10),
         meal: it.meal,
         cost: 45,
-        receiptUrl:
-          'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        day: it.day
       }));
       await saveTransactionToLocalStorage(transactions);
     })();
   }, [itemArr, paymentId]);
+
+const generatePDFReceipt = async () => {
+  try {
+    const html = `
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Receipt</title>
+        <style>
+        body {
+          font-family: 'Courier New', Courier, monospace;
+          background: #f7f7f7;
+          margin: 0;
+          padding: 0;
+        }
+        .receipt-box {
+          max-width: 380px;
+          margin: 40px auto;
+          padding: 24px 24px 16px 24px;
+          border: 1.5px dashed #333;
+          background: #fff;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        }
+        h1 {
+          font-size: 22px;
+          text-align: center;
+          margin: 0 0 12px 0;
+          letter-spacing: 1px;
+        }
+        h2 {
+          font-size: 16px;
+          margin: 18px 0 8px 0;
+          border-bottom: 1px solid #eee;
+          padding-bottom: 4px;
+        }
+        h3 {
+          font-size: 16px;
+          margin: 18px 0 0 0;
+          text-align: right;
+          letter-spacing: 0.5px;
+        }
+        p {
+          font-size: 13px;
+          margin: 4px 0;
+        }
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 0 0 8px 0;
+        }
+        li {
+          font-size: 13px;
+          padding: 4px 0;
+          border-bottom: 1px dotted #ddd;
+          display: flex;
+          justify-content: space-between;
+        }
+        .footer {
+          margin-top: 18px;
+          text-align: center;
+          font-size: 11px;
+          color: #888;
+          border-top: 1px dashed #bbb;
+          padding-top: 8px;
+          letter-spacing: 0.5px;
+        }
+        .label {
+          color: #555;
+          font-weight: bold;
+        }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-box">
+        <h1>Payment Receipt</h1>
+        <p><span class="label">Transaction ID:</span> ${paymentId}</p>
+        <p><span class="label">Date:</span> ${new Date().toLocaleDateString()}</p>
+        <h2>Items Purchased</h2>
+        <ul>
+          ${itemArr
+          .map(
+            (it) =>
+            `<li><span>${it.day} - ${it.meal.charAt(0).toUpperCase() + it.meal.slice(1)}</span><span>${it.qty}×</span></li>`
+          )
+          .join('')}
+        </ul>
+        <h3>Total Paid: ₹${Number(total).toFixed(2)}</h3>
+        <div class="footer">
+          Thank you for your purchase!<br/>
+          VH Mess Application
+        </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const file = await Print.printToFileAsync({ html:html ,base64:false });
+    await Sharing.shareAsync(file.uri);
+  } catch (err) {
+    console.error('PDF generation error:', err);
+    Alert.alert('Error', 'Could not generate receipt PDF.');
+  }
+};
+
+
 
   /* ── UI ─────────────────────────────────────────────── */
   return (
@@ -90,6 +199,13 @@ export default function Success() {
           onPress={() => router.push('/(tabs)')}
         >
           <Text style={styles.backBtnText}>Back to Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.backBtn}
+          activeOpacity={0.7}
+          onPress={generatePDFReceipt}  
+        >
+          <Text style={styles.backBtnText}>Download Receipt</Text>
         </TouchableOpacity>
       </View>
     </>

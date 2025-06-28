@@ -1,38 +1,35 @@
 import { Colors } from '@/constants/Colors';
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useTheme } from "@react-navigation/native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  Button,
   ScrollView,
-  StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
+  Switch
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-
-type MealKey = "breakfast" | "lunch" | "dinner";
+type MealKey = 'breakfast' | 'lunch' | 'dinner';
 type MealDetails = { description: string; price: number; coupons: number };
 type WeeklyMenu = Record<string, Record<MealKey, MealDetails>>;
 type Booking = Record<string, Record<MealKey, number>>;
 
+const MENU_KEY = 'weeklyMenu';
+const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
-
-const MENU_KEY = "weeklyMenu";
-const days = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
+// Compute current ISO week range (Mon-Sun)
+function getWeekRange(date: Date) {
+  const day = date.getDay() || 7; // Sunday -> 7
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - day + 1);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return { start: monday, end: sunday };
+}
 
 export default function BookingScreen() {
   const isDark = useTheme().dark;
@@ -41,8 +38,10 @@ export default function BookingScreen() {
 
   const [menuData, setMenuData] = useState<WeeklyMenu | null>(null);
   const [bookings, setBookings] = useState<Booking>({});
-  const todayIndex = new Date().getDay();
-  const todayLabel = days[todayIndex];
+  const today = new Date();
+  const { start: weekStart, end: weekEnd } = getWeekRange(today);
+  const todayIndex = today.getDay() || 7; // 1-7
+  const todayLabel = dayNames[todayIndex - 1];
   const [expandedDay, setExpandedDay] = useState<string>(todayLabel);
 
   useEffect(() => {
@@ -52,28 +51,35 @@ export default function BookingScreen() {
     })();
   }, []);
 
-  const isPastDay = (day: string) => days.indexOf(day) < todayIndex;
+  const daysOfThisWeek = dayNames.filter((dayName, idx) => {
+    const dt = new Date(weekStart);
+    dt.setDate(weekStart.getDate() + idx);
+    return dt >= weekStart && dt <= weekEnd;
+  });
 
+  const isPastDay = (dayName: string) => {
+    const idx = dayNames.indexOf(dayName);
+    const dt = new Date(weekStart);
+    dt.setDate(weekStart.getDate() + idx);
+    return dt < today;
+  };
 
   const isMealOpen = (day: string, meal: MealKey) => {
-    if (day !== todayLabel) return true; // future day — always open
-
-    // Today: enforce cut‑off times
+    if (day !== todayLabel) return true;
     const now = new Date();
-    const h = now.getHours();
-    const m = now.getMinutes();
-    if (meal === "breakfast") return h < 6;
-    if (meal === "lunch") return h < 12 || (h === 11 && m <= 59);
-    if (meal === "dinner") return h < 18;
+    const h = now.getHours(), m = now.getMinutes();
+    if (meal === 'breakfast') return h < 6;
+    if (meal === 'lunch') return h < 12 || (h === 11 && m <= 59);
+    if (meal === 'dinner') return h < 18;
     return true;
   };
 
   const toggleMeal = (day: string, meal: MealKey) => {
     if (isPastDay(day) || !isMealOpen(day, meal)) {
-      Alert.alert("Booking Closed", "Booking is closed for this selection.");
+      Alert.alert('Booking Closed', 'Booking is closed for this selection.');
       return;
     }
-    setBookings((prev) => {
+    setBookings(prev => {
       const updated = { ...prev };
       const curr = prev[day]?.[meal] ?? 0;
       if (!updated[day]) updated[day] = {} as any;
@@ -83,7 +89,7 @@ export default function BookingScreen() {
   };
 
   const changePeople = (day: string, meal: MealKey, delta: number) => {
-    setBookings((prev) => {
+    setBookings(prev => {
       const updated = { ...prev };
       const curr = prev[day]?.[meal] ?? 0;
       const next = Math.max(1, curr + delta);
@@ -94,59 +100,40 @@ export default function BookingScreen() {
   };
 
   const calculateTotalPrice = () =>
-    Object.entries(bookings).reduce(
-      (sum, [day, meals]) =>
-        sum +
-        Object.entries(meals).reduce(
-          (daySum, [meal, cnt]) =>
-            daySum + cnt * (menuData![day][meal as MealKey].price),
-          0
-        ),
-      0
-    );
+    Object.entries(bookings).reduce((sum, [day, meals]) =>
+      sum + Object.entries(meals).reduce((daySum, [meal, cnt]) =>
+        daySum + cnt * menuData![day][meal as MealKey].price, 0), 0);
 
   const handleSubmit = () => {
     const total = calculateTotalPrice();
-
     router.push({
-      pathname:'/payment',
-      params: { total: total.toString() , bookings:JSON.stringify(bookings)},
-
+      pathname: '/payment',
+      params: { total: total.toString(), bookings: JSON.stringify(bookings) }
     });
   };
 
   const showConfirmationAlert = () => {
     setTimeout(() => {
-      Alert.alert(
-        "Confirm Order",
-        "Proceed to Payment?",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Submit", onPress: handleSubmit },
-        ],
-        { cancelable: true }
-      );
+      Alert.alert('Confirm Order', 'Proceed to Payment?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Submit', onPress: handleSubmit }
+      ], { cancelable: true });
     }, 100);
   };
 
-  if (!menuData)
-    return (
-      <View style={styles.container}>
-        <Text style={styles.heading}>Loading menu…</Text>
-      </View>
-    );
+  if (!menuData) {
+    return <View style={styles.container}><Text style={styles.heading}>Loading menu…</Text></View>;
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
-      <ScrollView style={[
-            styles.container,
-            { flexGrow: 1, paddingBottom: 80 }]}>
+    <SafeAreaView style={{ flex: 1 }} edges={['left','right','bottom']}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 80 }} style={styles.container}>
         <Text style={styles.notice}>
-          Book today before cut-off times, or any time for future days. Past days are locked.
+          Book only within this week. Past days are locked; today's cut‑offs apply.
         </Text>
         <Text style={styles.heading}>Book Your Meals</Text>
 
-        {Object.entries(menuData).map(([day, meals]) => {
+        {daysOfThisWeek.map(day => {
           const past = isPastDay(day);
           const isExpanded = expandedDay === day;
           return (
@@ -157,33 +144,32 @@ export default function BookingScreen() {
                   <Text style={styles.deadlineNote}>(Booking closed)</Text>
                 </>
               ) : (
-                <TouchableOpacity onPress={() => setExpandedDay((ed) => (ed === day ? "" : day))}>
+                <TouchableOpacity onPress={() => setExpandedDay(ed => ed === day ? '' : day)}>
                   <Text style={styles.dayTitle}>{day}</Text>
                 </TouchableOpacity>
               )}
 
               {!past && isExpanded && (
                 <View style={styles.mealSection}>
-                  {(Object.keys(meals) as MealKey[]).map((meal) => {
+                  {(Object.keys(menuData![day]) as MealKey[]).map(meal => {
                     const open = isMealOpen(day, meal);
                     const count = bookings[day]?.[meal] ?? 0;
+                    const details = menuData![day][meal];
                     return (
                       <View key={meal} style={styles.mealRow}>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.mealLabel}>
-                            {meal.charAt(0).toUpperCase() + meal.slice(1)}
-                          </Text>
-                          <Text style={styles.mealDescription}>{meals[meal].description}</Text>
-                          <Text style={styles.mealPrice}>₹{meals[meal].price}</Text>
-                          <Text style={styles.coupon}>{meals[meal].coupons} coupon(s)</Text>
+                          <Text style={styles.mealLabel}>{meal.charAt(0).toUpperCase() + meal.slice(1)}</Text>
+                          <Text style={styles.mealDescription}>{details.description}</Text>
+                          <Text style={styles.mealPrice}>₹{details.price}</Text>
+                          <Text style={styles.coupon}>{details.coupons} coupon(s)</Text>
                         </View>
 
                         <Switch
                           value={count > 0}
                           disabled={!open}
                           onValueChange={() => toggleMeal(day, meal)}
-                          trackColor={{ true: open ? undefined : "#888" }}
-                          thumbColor={open ? undefined : "#555"}
+                          trackColor={{ true: open ? undefined : '#888' }}
+                          thumbColor={open ? undefined : '#555'}
                         />
 
                         {open && count > 0 && (
@@ -211,14 +197,18 @@ export default function BookingScreen() {
         })}
 
         <View style={styles.totalContainer}>
-          <Text style={styles.totalText}>Total Price:=: ₹{calculateTotalPrice()}</Text>
+          <Text style={styles.totalText}>Total Price: ₹{calculateTotalPrice()}</Text>
         </View>
-        <View style={[styles.submitContainer,{marginBottom:10}]}>
-          <TouchableOpacity style={styles.button} onPress={()=>{router.push('/(tabs)');}}>
-          <Text style={styles.buttonText}>Cancel</Text>
+        <View style={styles.submitContainer}>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/(tabs)')}>
+            <Text style={styles.buttonText}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.button,(calculateTotalPrice()==0) && styles.buttonDisabled]} disabled={calculateTotalPrice()==0} onPress={showConfirmationAlert}>
-          <Text style={styles.buttonText}>Proceed to Payment</Text>
+          <TouchableOpacity
+            style={[styles.button, calculateTotalPrice() === 0 && styles.buttonDisabled]}
+            disabled={calculateTotalPrice() === 0}
+            onPress={showConfirmationAlert}
+          >
+            <Text style={styles.buttonText}>Proceed to Payment</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -226,32 +216,33 @@ export default function BookingScreen() {
   );
 }
 
+import { StyleSheet } from 'react-native';
 function createStyles(isDark: boolean) {
   return StyleSheet.create({
     container: {
       flex: 1,
       padding: 16,
-      backgroundColor: isDark ? Colors.dark.background : Colors.light.background,
+      backgroundColor: isDark ? Colors.dark.screenBg : Colors.light.screenBg,
     },
     notice: {
       fontSize: 14,
-      marginBottom: 8,
-      color: isDark ? Colors.dark.notice : Colors.light.notice,
-      textAlign: "center",
+      marginBottom: 10,
+      color: isDark ? Colors.dark.noticeText : Colors.light.noticeText,
+      textAlign: 'center',
       fontFamily: 'OpenSans_400Regular',
     },
     heading: {
       fontSize: 24,
+      textAlign: 'center',
       fontFamily: 'Poppins_600SemiBold',
+      color: isDark ? Colors.dark.headingText : Colors.light.headingText,
       marginBottom: 12,
-      textAlign:'center',
-      color: isDark ? Colors.dark.text : Colors.light.text,
     },
     daySection: {
-      marginBottom: 12,
-      padding: 12,
-      backgroundColor: isDark ? Colors.dark.daySection : Colors.light.daySection,
-      borderRadius: 8,
+      marginBottom: 14,
+      padding: 14,
+      borderRadius: 10,
+      backgroundColor: isDark ? Colors.dark.cardBg : Colors.light.cardBg,
     },
     dayTitle: {
       fontSize: 20,
@@ -259,19 +250,22 @@ function createStyles(isDark: boolean) {
       color: isDark ? Colors.dark.dayTitle : Colors.light.dayTitle,
     },
     deadlineNote: {
+      marginTop: 4,
       fontSize: 12,
       fontFamily: 'OpenSans_400Regular',
-      color: isDark ? Colors.dark.deadlineNote : Colors.light.deadlineNote,
-      marginTop: 4,
+      color: isDark ? Colors.dark.closedText : Colors.light.closedText,
     },
     mealSection: {
       marginTop: 10,
     },
     mealRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       marginVertical: 6,
+      paddingVertical: 6,
+      borderBottomColor: isDark ? Colors.dark.border : Colors.light.border,
+      borderBottomWidth: 0.5,
     },
     mealLabel: {
       fontSize: 16,
@@ -281,13 +275,13 @@ function createStyles(isDark: boolean) {
     mealDescription: {
       fontSize: 12,
       fontFamily: 'OpenSans_400Regular',
-      color: isDark ? Colors.dark.mealDescription : Colors.light.mealDescription,
+      color: isDark ? Colors.dark.subText : Colors.light.subText,
       marginBottom: 2,
     },
     mealPrice: {
       fontSize: 13,
       fontFamily: 'Inter_400Regular',
-      color: isDark ? Colors.dark.mealPrice : Colors.light.mealPrice,
+      color: isDark ? Colors.dark.price : Colors.light.price,
     },
     coupon: {
       fontSize: 12,
@@ -295,69 +289,65 @@ function createStyles(isDark: boolean) {
       color: isDark ? Colors.dark.coupon : Colors.light.coupon,
     },
     counterContainer: {
-      flexDirection: "row",
-      alignItems: "center",
+      flexDirection: 'row',
+      alignItems: 'center',
       marginLeft: 8,
     },
     counterBtn: {
       fontSize: 20,
       width: 30,
-      textAlign: "center",
-      fontFamily: 'Inter_400Regular',
-      color: isDark ? Colors.dark.text : Colors.light.text,
+      textAlign: 'center',
+      color: isDark ? Colors.dark.buttonText : Colors.light.buttonText,
     },
     counterText: {
       fontSize: 16,
       width: 30,
-      textAlign: "center",
+      textAlign: 'center',
       fontFamily: 'Inter_400Regular',
       color: isDark ? Colors.dark.text : Colors.light.text,
     },
     closedLabel: {
-      fontFamily: 'Poppins_600SemiBold',
+      fontSize: 13,
+      fontStyle: 'italic',
       color: isDark ? Colors.dark.closedLabel : Colors.light.closedLabel,
+      fontFamily: 'Poppins_500Medium',
+      marginTop: 6,
     },
     totalContainer: {
       marginTop: 20,
       padding: 12,
-      backgroundColor: isDark ? Colors.dark.daySection : Colors.light.daySection,
-      borderRadius: 12,
-      alignItems: "center",
+      borderRadius: 10,
+      backgroundColor: isDark ? Colors.dark.totalCard : Colors.light.totalCard,
+      alignItems: 'center',
     },
     totalText: {
       fontSize: 16,
-      fontFamily: 'OpenSans_400Regular',
+      fontFamily: 'OpenSans_600SemiBold',
       color: isDark ? Colors.dark.text : Colors.light.text,
     },
     submitContainer: {
-      marginTop: 10,
-      marginBottom: 10,
-      flex:1,
+      marginTop: 16,
     },
     button: {
-    backgroundColor: '#3399cc',     // primary color
-    paddingVertical: 12,            // vertical padding
-    paddingHorizontal: 20,          // horizontal padding
-    borderRadius: 10,               // rounded corners
-    alignItems: 'center',           // center text
-    justifyContent: 'center',
-    marginVertical: 8,              // vertical spacing between buttons
-    elevation: 2,                   // subtle shadow (Android)
-    shadowColor: '#000',            // subtle shadow (iOS)
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  buttonDisabled: {
-    backgroundColor: '#a0a0a0',         // greyed out
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',              // semi-bold
-    fontFamily: 'Poppins_600SemiBold', // optional custom font
-  },
+      backgroundColor: '#3399cc',
+      paddingVertical: 14,
+      borderRadius: 10,
+      alignItems: 'center',
+      marginVertical: 6,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },
+    buttonDisabled: {
+      backgroundColor: '#a0a0a0',
+      shadowOpacity: 0,
+    },
+    buttonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+      fontFamily: 'Poppins_600SemiBold',
+    },
   });
 }
