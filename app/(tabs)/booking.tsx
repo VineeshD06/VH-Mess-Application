@@ -1,29 +1,31 @@
 import { Colors } from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme } from '@react-navigation/native';
+import { useTheme, useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
-  Switch
+  Switch,
+  findNodeHandle
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet } from 'react-native';
+
+const MENU_KEY = 'weeklyMenu';
+const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 type MealKey = 'breakfast' | 'lunch' | 'dinner';
 type MealDetails = { description: string; price: number; coupons: number };
 type WeeklyMenu = Record<string, Record<MealKey, MealDetails>>;
 type Booking = Record<string, Record<MealKey, number>>;
 
-const MENU_KEY = 'weeklyMenu';
-const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-
-// Compute current ISO week range (Mon-Sun)
 function getWeekRange(date: Date) {
-  const day = date.getDay() || 7; // Sunday -> 7
+  const day = date.getDay() || 7;
   const monday = new Date(date);
   monday.setDate(date.getDate() - day + 1);
   const sunday = new Date(monday);
@@ -35,12 +37,18 @@ export default function BookingScreen() {
   const isDark = useTheme().dark;
   const styles = useMemo(() => createStyles(isDark), [isDark]);
   const router = useRouter();
+  const navigation = useNavigation();
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const dayRefs = useRef<Record<string, React.RefObject<View>>>(
+    Object.fromEntries(dayNames.map(day => [day, React.createRef<View>()])) as Record<string, React.RefObject<View>>
+  );
 
   const [menuData, setMenuData] = useState<WeeklyMenu | null>(null);
   const [bookings, setBookings] = useState<Booking>({});
   const today = new Date();
   const { start: weekStart, end: weekEnd } = getWeekRange(today);
-  const todayIndex = today.getDay() || 7; // 1-7
+  const todayIndex = today.getDay() || 7;
   const todayLabel = dayNames[todayIndex - 1];
   const [expandedDay, setExpandedDay] = useState<string>(todayLabel);
 
@@ -51,7 +59,20 @@ export default function BookingScreen() {
     })();
   }, []);
 
-  const daysOfThisWeek = dayNames.filter((dayName, idx) => {
+  useEffect(() => {
+    setTimeout(() => {
+      const ref = dayRefs.current[todayLabel];
+      ref?.current?.measureLayout(
+        findNodeHandle(scrollViewRef.current) as number,
+        (x: number, y: number) => {
+          scrollViewRef.current?.scrollTo({ y, animated: true });
+        },
+        () => console.warn('measureLayout error')
+      );
+    }, 300);
+  }, []);
+
+  const daysOfThisWeek = dayNames.filter((_, idx) => {
     const dt = new Date(weekStart);
     dt.setDate(weekStart.getDate() + idx);
     return dt >= weekStart && dt <= weekEnd;
@@ -126,18 +147,25 @@ export default function BookingScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['left','right','bottom']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 80 }} style={styles.container}>
-        <Text style={styles.notice}>
-          Book only within this week. Past days are locked; today's cut‑offs apply.
-        </Text>
-        <Text style={styles.heading}>Book Your Meals</Text>
+    <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
+     
+        {/* <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color={isDark ? '#fff' : '#000'} />
+        </TouchableOpacity> */}
+    
+      <ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: 80 }} style={styles.container}>
+        <Text style={styles.notice}>Book only within this week. Past days are locked; today's cut‑offs apply.</Text>
 
         {daysOfThisWeek.map(day => {
           const past = isPastDay(day);
           const isExpanded = expandedDay === day;
+          const isToday = day === todayLabel;
           return (
-            <View key={day} style={styles.daySection}>
+            <View
+              key={day}
+              style={[styles.daySection, isToday && styles.todayHighlight]}
+              ref={dayRefs.current[day]}
+            >
               {past ? (
                 <>
                   <Text style={styles.dayTitle}>{day}</Text>
@@ -145,7 +173,7 @@ export default function BookingScreen() {
                 </>
               ) : (
                 <TouchableOpacity onPress={() => setExpandedDay(ed => ed === day ? '' : day)}>
-                  <Text style={styles.dayTitle}>{day}</Text>
+                  <Text style={styles.dayTitle}>{day}{isToday && ' (Today)'}</Text>
                 </TouchableOpacity>
               )}
 
@@ -157,36 +185,36 @@ export default function BookingScreen() {
                     const details = menuData![day][meal];
                     return (
                       <View key={meal} style={styles.mealRow}>
-                        <View style={{ flex: 1 }}>
+                        <View style={{ flex: 2 }}>
                           <Text style={styles.mealLabel}>{meal.charAt(0).toUpperCase() + meal.slice(1)}</Text>
                           <Text style={styles.mealDescription}>{details.description}</Text>
                           <Text style={styles.mealPrice}>₹{details.price}</Text>
                           <Text style={styles.coupon}>{details.coupons} coupon(s)</Text>
                         </View>
-
-                        <Switch
-                          value={count > 0}
-                          disabled={!open}
-                          onValueChange={() => toggleMeal(day, meal)}
-                          trackColor={{ true: open ? undefined : '#888' }}
-                          thumbColor={open ? undefined : '#555'}
-                        />
-
-                        {open && count > 0 && (
-                          <View style={styles.counterContainer}>
-                            <TouchableOpacity onPress={() => changePeople(day, meal, -1)}>
-                              <Text style={styles.counterBtn}>-</Text>
-                            </TouchableOpacity>
-                            <Text style={styles.counterText}>{count}</Text>
-                            <TouchableOpacity onPress={() => changePeople(day, meal, 1)}>
-                              <Text style={styles.counterBtn}>+</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-
-                        {!open && day === todayLabel && (
-                          <Text style={styles.closedLabel}>Closed for today</Text>
-                        )}
+                        <View style={{ flex: 1, alignItems: 'center' }}>
+                          <Switch
+                            value={count > 0}
+                            disabled={!open}
+                            onValueChange={() => toggleMeal(day, meal)}
+                            trackColor={{ true: open ? '#3399cc' : '#888' }}
+                            thumbColor={open ? undefined : '#555'}
+                          />
+                        </View>
+                        <View style={{ flex: 2, alignItems: 'flex-end' }}>
+                          {open && count > 0 ? (
+                            <View style={styles.counterContainer}>
+                              <TouchableOpacity onPress={() => changePeople(day, meal, -1)}>
+                                <Text style={styles.counterBtn}>-</Text>
+                              </TouchableOpacity>
+                              <Text style={styles.counterText}>{count}</Text>
+                              <TouchableOpacity onPress={() => changePeople(day, meal, 1)}>
+                                <Text style={styles.counterBtn}>+</Text>
+                              </TouchableOpacity>
+                            </View>
+                          ) : !open && isToday ? (
+                            <Text numberOfLines={1} style={styles.closedLabel}>Closed</Text>
+                          ) : null}
+                        </View>
                       </View>
                     );
                   })}
@@ -216,9 +244,14 @@ export default function BookingScreen() {
   );
 }
 
-import { StyleSheet } from 'react-native';
+
 function createStyles(isDark: boolean) {
   return StyleSheet.create({
+      todayHighlight: {
+      borderWidth: 1.5,
+      borderColor: '#3399cc',
+      backgroundColor: isDark ? '#1a2a3a' : '#e6f7ff'
+    },
     container: {
       flex: 1,
       padding: 16,

@@ -1,43 +1,14 @@
-//for verification add this dummy data in the locol storage
-
-//'bookingHistory' key
-// [
-//   {
-//     "id": "M001",
-//     "date": "2025‑06‑16",
-//     "meal": "Breakfast",
-//     "cost": 45,
-//     "receiptUrl": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-//   },
-//   {
-//     "id": "M002",
-//     "date": "2025‑06‑16",
-//     "meal": "Dinner",
-//     "cost": 80,
-//     "receiptUrl": "https://www.africau.edu/images/default/sample.pdf"
-//   },
-//   {
-//     "id": "M003",
-//     "date": "2025‑06‑15",
-//     "meal": "Lunch",
-//     "cost": 65,
-//     "receiptUrl": "https://file-examples.com/storage/fe0f9e1a8d8d6d6b7a6b2e1/2017/10/file-sample_150kB.pdf"
-//   },
-//   {
-//     "id": "M004",
-//     "date": "2025‑06‑14",
-//     "meal": "Snack",
-//     "cost": 30
-//   }
-// ]
 import { Colors } from '@/constants/Colors';
 import { addDummyBookingHistory } from '@/utils/addDummyBookingHistory';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@react-navigation/native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
+import { Asset } from 'expo-asset';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Constants from 'expo-constants';
 
 
 
@@ -58,9 +29,34 @@ export default function History() {
   const styles = createStyles(mode);
 
   const [history, setHistory] = useState<Meal[]>([]);
-//   useEffect(() => {
-//   addDummyBookingHistory();
-// }, []);
+
+
+  const addDummyCards = async () => {
+  const dummyData: Meal[] = [
+    {
+      id: 'ORD123456',
+      date: '2025-06-29',
+      meal: 'Lunch',
+      cost: 75,
+      userName: 'Muragesh',
+    },
+    {
+      id: 'ORD789101',
+      date: '2025-06-28',
+      meal: 'Dinner',
+      cost: 90,
+      userName: 'Muragesh',
+    }
+  ];
+  await AsyncStorage.setItem('transactions', JSON.stringify(dummyData));
+  setHistory(dummyData);
+};
+
+
+  useEffect(() => {
+  addDummyBookingHistory();
+}, []);
+
 
 
   useEffect(() => {
@@ -73,12 +69,15 @@ export default function History() {
       }
     })();
   }, []);
+const logoFallback = require('@/assets/IIT-Kanpur.png');
 
 const generatePDFReceipt = async (item: Meal) => {
   try {
+    const logo = Asset.fromModule(logoFallback).uri;
+
     const html = `
-    
       <html>
+        <head>
         <head>
           <meta charset="utf-8" />
           <title>Receipt</title>
@@ -101,6 +100,12 @@ const generatePDFReceipt = async (item: Meal) => {
             h1 {
               text-align: center;
               color: #3f51b5;
+              margin-bottom: 0;
+            }
+            .logo {
+              max-width: 120px;
+              display: block;
+              margin: 0 auto 20px;
             }
             table {
               width: 100%;
@@ -127,6 +132,7 @@ const generatePDFReceipt = async (item: Meal) => {
         </head>
         <body>
           <div class="receipt-box">
+            <img src="${logo}" class="logo" />
             <h1>IITK Mess Receipt</h1>
             <table>
               <tr><th>Order ID</th><td>${item.id}</td></tr>
@@ -143,41 +149,45 @@ const generatePDFReceipt = async (item: Meal) => {
       </html>
     `;
 
-    const file = await Print.printToFileAsync({ html:html ,base64:false });
-    await Sharing.shareAsync(file.uri);
+    const file = await Print.printToFileAsync({ html, base64: false });
+
+    const filename = `${item.date}_${item.meal}_${item.id}.pdf`;
+    const newUri = FileSystem.documentDirectory + filename;
+
+    await FileSystem.moveAsync({ from: file.uri, to: newUri });
+    await Sharing.shareAsync(newUri);
   } catch (err) {
     console.error('PDF generation error:', err);
     Alert.alert('Error', 'Could not generate receipt PDF.');
   }
 };
+return (
+  <View style={styles.container}>
+    <Text style={styles.heading}>Booking History</Text>
+    <FlatList
+      data={history}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={styles.listContent}
+      showsVerticalScrollIndicator={false}
+      ListEmptyComponent={
+        <Text style={{ textAlign: 'center', marginTop: 40, color: mode === 'dark' ? '#aaa' : '#333' }}>
+          No bookings yet.
+        </Text>
+      }
+      renderItem={({ item }) => (
+        <TouchableOpacity onPress={() => generatePDFReceipt(item)} style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.meal}>{item.meal}</Text>
+            <Text style={styles.cost}>₹{item.cost}</Text>
+          </View>
+          <Text style={styles.date}>{item.date}</Text>
+          <Text style={styles.id}>ID: {item.id}</Text>
+        </TouchableOpacity>
+      )}
+    />
+  </View>
+);
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Booking History</Text>
-      <FlatList
-        data={history}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <Text style={{ textAlign: 'center', marginTop: 40, color: mode === 'dark' ? '#aaa' : '#333' }}>
-            No bookings yet.
-          </Text>
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => generatePDFReceipt(item)} style={styles.card}>
-            <View style={styles.row}>
-              <Text style={styles.meal}>{item.meal}</Text>
-              <Text style={styles.cost}>₹{item.cost}</Text>
-            </View>
-            <Text style={styles.date}>{item.date}</Text>
-            <Text style={styles.id}>ID: {item.id}</Text>
-          </TouchableOpacity>
-        )}
-      />
-    </View>
-  );
-}
 function createStyles(mode: 'dark' | 'light') {
   const isDark = mode === 'dark';
   return StyleSheet.create({
@@ -234,4 +244,5 @@ function createStyles(mode: 'dark' | 'light') {
       color: isDark ? Colors.dark.tabIconDefault : Colors.light.tabIconDefault,
     },
   });
+}
 }
