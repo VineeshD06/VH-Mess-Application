@@ -1,20 +1,19 @@
 import { Colors } from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme, useNavigation } from '@react-navigation/native';
+import { useNavigation, useTheme } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   ScrollView,
+  StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
-  Switch,
   findNodeHandle
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet } from 'react-native';
 
 const MENU_KEY = 'weeklyMenu';
 const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -22,7 +21,7 @@ const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Satur
 type MealKey = 'breakfast' | 'lunch' | 'dinner';
 type MealDetails = { description: string; price: number; coupons: number };
 type WeeklyMenu = Record<string, Record<MealKey, MealDetails>>;
-type Booking = Record<string, Record<MealKey, number>>;
+type Booking = Record<string, Record<MealKey, { qty: number; price: number }>>;
 
 function getWeekRange(date: Date) {
   const day = date.getDay() || 7;
@@ -96,34 +95,48 @@ export default function BookingScreen() {
   };
 
   const toggleMeal = (day: string, meal: MealKey) => {
-    if (isPastDay(day) || !isMealOpen(day, meal)) {
-      Alert.alert('Booking Closed', 'Booking is closed for this selection.');
-      return;
-    }
-    setBookings(prev => {
-      const updated = { ...prev };
-      const curr = prev[day]?.[meal] ?? 0;
-      if (!updated[day]) updated[day] = {} as any;
-      updated[day][meal] = curr === 0 ? 1 : 0;
-      return updated;
-    });
-  };
+  if (isPastDay(day) || !isMealOpen(day, meal)) {
+    Alert.alert('Booking Closed', 'Booking is closed for this selection.');
+    return;
+  }
 
-  const changePeople = (day: string, meal: MealKey, delta: number) => {
-    setBookings(prev => {
-      const updated = { ...prev };
-      const curr = prev[day]?.[meal] ?? 0;
-      const next = Math.max(1, curr + delta);
-      if (!updated[day]) updated[day] = {} as any;
-      updated[day][meal] = next;
-      return updated;
-    });
-  };
+  setBookings(prev => {
+    const updated  = { ...prev };
+    const prevDay  = updated[day] ?? {};
+    const entry    = prevDay[meal] ?? { qty: 0, price: menuData![day][meal].price };
+
+    updated[day] = {
+      ...prevDay,
+      [meal]: { ...entry, qty: entry.qty === 0 ? 1 : 0 },
+    };
+    return updated;
+  });
+};
+
+const changePeople = (day: string, meal: MealKey, delta: number) => {
+  setBookings(prev => {
+    const updated = { ...prev };
+    const prevDay = updated[day] ?? {};
+    const entry   = prevDay[meal] ?? {
+      qty: 1,
+      price: menuData![day][meal].price,
+    };
+
+    const nextQty = Math.max(1, entry.qty + delta);
+
+    updated[day] = {
+      ...prevDay,
+      [meal]: { ...entry, qty: nextQty },
+    };
+    return updated;
+  });
+};
+
 
   const calculateTotalPrice = () =>
-    Object.entries(bookings).reduce((sum, [day, meals]) =>
-      sum + Object.entries(meals).reduce((daySum, [meal, cnt]) =>
-        daySum + cnt * menuData![day][meal as MealKey].price, 0), 0);
+  Object.entries(bookings).reduce((sum, [_, meals]) =>
+    sum + Object.values(meals).reduce((sub, info) => sub + info.qty * info.price, 0)
+  , 0);
 
   const handleSubmit = () => {
     const total = calculateTotalPrice();
@@ -149,10 +162,6 @@ export default function BookingScreen() {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
      
-        {/* <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={isDark ? '#fff' : '#000'} />
-        </TouchableOpacity> */}
-    
       <ScrollView ref={scrollViewRef} contentContainerStyle={{ paddingBottom: 80 }} style={styles.container}>
         <Text style={styles.notice}>Book only within this week. Past days are locked; today's cut‑offs apply.</Text>
 
@@ -193,7 +202,7 @@ export default function BookingScreen() {
                         </View>
                         <View style={{ flex: 1, alignItems: 'center' }}>
                           <Switch
-                            value={count > 0}
+                            value={count.qty > 0}
                             disabled={!open}
                             onValueChange={() => toggleMeal(day, meal)}
                             trackColor={{ true: open ? '#3399cc' : '#888' }}
@@ -201,12 +210,12 @@ export default function BookingScreen() {
                           />
                         </View>
                         <View style={{ flex: 2, alignItems: 'flex-end' }}>
-                          {open && count > 0 ? (
+                          {open && count.qty > 0 ? (
                             <View style={styles.counterContainer}>
                               <TouchableOpacity onPress={() => changePeople(day, meal, -1)}>
                                 <Text style={styles.counterBtn}>-</Text>
                               </TouchableOpacity>
-                              <Text style={styles.counterText}>{count}</Text>
+                              <Text style={styles.counterText}>{count.qty}</Text>
                               <TouchableOpacity onPress={() => changePeople(day, meal, 1)}>
                                 <Text style={styles.counterBtn}>+</Text>
                               </TouchableOpacity>

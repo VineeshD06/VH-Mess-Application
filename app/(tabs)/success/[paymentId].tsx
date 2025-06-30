@@ -1,57 +1,30 @@
 // app/success/[paymentId].tsx
 import { Colors } from '@/constants/Colors';
-import { saveTransactionToLocalStorage } from '@/utils/saveTransaction';
 import { useTheme } from '@react-navigation/native';
+import * as Print from 'expo-print';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo } from 'react';
+import * as Sharing from 'expo-sharing';
+import React, { useMemo } from 'react';
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Alert,
 } from 'react-native';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
-
-type Transaction = {
-  id: string;
-  date: string;
-  meal: string;
-  cost: number;
-
-  day: string; // Add day for history display
-};
 
 type Item = { day: string; meal: string; qty: number };
 
 export default function Success() {
-  /* ── params ─────────────────────────────────────────── */
   const { paymentId, items = '[]', total = '0' } =
     useLocalSearchParams<{ paymentId: string; items: string; total: string }>();
 
   const itemArr: Item[] = JSON.parse(items);
 
-  /* ── hooks & theme ──────────────────────────────────── */
   const isDark  = useTheme().dark;
   const styles  = useMemo(() => createStyles(isDark), [isDark]);
   const router  = useRouter();
-
-  /* ── save each item as a transaction coupon ─────────── */
-  useEffect(() => {
-    (async () => {
-      // Save each booked item as a separate transaction for history
-      const transactions: Transaction[] = itemArr.map((it) => ({
-        id: paymentId,
-        date: new Date().toISOString().slice(0, 10),
-        meal: it.meal,
-        cost: 45,
-        day: it.day
-      }));
-      await saveTransactionToLocalStorage(transactions);
-    })();
-  }, [itemArr, paymentId]);
 
 const generatePDFReceipt = async () => {
   try {
@@ -156,9 +129,6 @@ const generatePDFReceipt = async () => {
   }
 };
 
-
-
-  /* ── UI ─────────────────────────────────────────────── */
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
