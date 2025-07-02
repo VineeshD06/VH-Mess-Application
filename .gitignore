@@ -37,3 +37,28 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+
+# --- Android Native Builds ---
+android/.gradle/
+android/.cxx/
+android/app/build/
+android/build/
+*.apk
+*.aab
+
+# --- iOS Native Builds ---
+ios/Pods/
+ios/build/
+
+# --- Java / Kotlin Native ---
+*.keystore
+*.so
+
+# --- Auto-generated splash/logo assets ---
+android/app/src/main/res/drawable*/splashscreen_logo.png
+android/app/src/main/res/mipmap*/ic_launcher*.webp
+
+# --- IDE & Misc ---
+.vscode/
+.idea/
