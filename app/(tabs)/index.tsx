@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/Colors';
-import { MealKey, MealDetails, mealImages } from '@/utils/initMenu';
+import { MealKey, MealDetails, mealImages, dayNames, CUT_OFF } from '@/utils/initMenu';
 import { getWeeklyMenu } from '@/utils/menuUtils';
 import { useTheme } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -23,24 +23,35 @@ export default function HomeScreen(): React.ReactElement {
 
   const [todayMeals, setTodayMeals] = useState<Record<MealKey, MealDetails> | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
 
-  const isMealOpen = (meal: MealKey) => {
-    const now = new Date();
-    const h = now.getHours(), m = now.getMinutes();
-    if (meal === 'Breakfast') return h < 6;
-    if (meal === 'Lunch') return h < 12 || (h === 11 && m <= 59);
-    if (meal === 'Dinner') return h < 18;
-    return true;
-  };
+    const isMealOpen = (day: string, meal: string): boolean => {
+      const normalizedMeal = meal as MealKey;
+      const now = new Date();
+  
+      const currentDay = dayNames[(now.getDay() || 7) - 1];
+      if (day !== currentDay) return true;
+  
+      const cutoff = CUT_OFF[normalizedMeal];
+      if (!cutoff) {
+        console.warn(` Invalid meal key: "${meal}"`);
+        return false;
+      }
+  
+      const { hour, minute } = cutoff;
+      const h = now.getHours();
+      const m = now.getMinutes();
+  
+      return h < hour || (h === hour && m < minute);
+    };
   useEffect(()=>{
     loadTodayMeals();
   }, []);
 
   const loadTodayMeals = async () => {
     try {
-      setLoading(true);
-      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+      setLoading(true);      
       const menu = await getWeeklyMenu();
       menu ? setTodayMeals(menu[today as keyof typeof menu]) : setTodayMeals(null);
     } catch (error) {
@@ -74,8 +85,8 @@ export default function HomeScreen(): React.ReactElement {
               <Text style={styles.cardHeading}>{mealKey}</Text>
               <Text style={styles.price}>₹{todayMeals[mealKey].price}</Text>
               <Text style={styles.desc}>{todayMeals[mealKey].description}</Text>
-              <TouchableOpacity style={styles.button} disabled ={!isMealOpen(mealKey)} onPress={() => router.push({ pathname: '/(tabs)/booking', params: { selectedMeal: mealKey } })}>
-                <Text style={isMealOpen(mealKey)? styles.buttonText: styles.disablebuttonText}>{isMealOpen(mealKey) ? "Book Now →": "Not Available Now"}</Text>
+              <TouchableOpacity style={styles.button} disabled ={!isMealOpen(today,mealKey)} onPress={() => router.push({ pathname: '/(tabs)/booking', params: { selectedMeal: mealKey } })}>
+                <Text style={isMealOpen(today,mealKey)? styles.buttonText: styles.disablebuttonText}>{isMealOpen(today,mealKey) ? "Book Now →": "Closed"}</Text>
               </TouchableOpacity>
             </View>
             <Image source={mealImages[mealKey]} style={styles.image} />
