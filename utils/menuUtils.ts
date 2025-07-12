@@ -66,7 +66,7 @@ const fetchWeeklyMenuFromServer = async (): Promise<WeeklyMenu | null> => {
       } = item;
       // To ensure the key exists 
       transformedMenu[day_of_week] = transformedMenu[day_of_week] || {}; 
-      transformedMenu[day_of_week][meal_type] = { description, price };
+      transformedMenu[day_of_week][meal_type] = { description, price: parseFloat(price) };
     });
     return transformedMenu;
   } catch (error) {

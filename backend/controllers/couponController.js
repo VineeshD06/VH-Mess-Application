@@ -40,7 +40,7 @@ const initiateOrder = async (req, res) => {
                 meal_date: meal_date,
                 meal_type: meal_type,
                 order_id: order_id,
-                status: 'Pending'
+                status: 'Active' //since there is no payment thing happening
             });
         }
 
@@ -49,7 +49,7 @@ const initiateOrder = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: 'Order initiated. Please proceed to payment.',
+            message: 'Order received.',
             order_id: order_id,
             totalAmount: totalAmount,
             paymentGatewayDetails: {
@@ -67,48 +67,48 @@ const initiateOrder = async (req, res) => {
     }
 };
 
-const confirmPayment = async (req, res) => {
-    const { order_id, payment_id, transaction_status } = req.body;
+// const confirmPayment = async (req, res) => {
+//     const { order_id, payment_id, transaction_status } = req.body;
 
-    if (!order_id || !payment_id || !transaction_status) {
-        return res.status(400).json({ success: false, message: 'Invalid webhook payload.' });
-    }
+//     if (!order_id || !payment_id || !transaction_status) {
+//         return res.status(400).json({ success: false, message: 'Invalid webhook payload.' });
+//     }
 
-    try {
-        if (transaction_status === 'SUCCESS') {
-            const [affectedRows] = await PurchasedCoupon.update(
-                {
-                    status: 'Active',
-                    payment_id: payment_id
-                },
-                {
-                    where: {
-                        order_id: order_id,
-                        status: 'Pending'
-                    }
-                }
-            );
+//     try {
+//         if (transaction_status === 'SUCCESS') {
+//             const [affectedRows] = await PurchasedCoupon.update(
+//                 {
+//                     status: 'Active',
+//                     payment_id: payment_id
+//                 },
+//                 {
+//                     where: {
+//                         order_id: order_id,
+//                         status: 'Pending'
+//                     }
+//                 }
+//             );
 
-            if (affectedRows > 0) {
-                console.log(`Successfully activated ${affectedRows} coupons for order ${order_id}.`);
-            } else {
-                console.log(`Webhook received for already processed or invalid order: ${order_id}`);
-            }
-        } else {
-            console.log(`Payment failed or was cancelled for order ${order_id}.`);
-        }
+//             if (affectedRows > 0) {
+//                 console.log(`Successfully activated ${affectedRows} coupons for order ${order_id}.`);
+//             } else {
+//                 console.log(`Webhook received for already processed or invalid order: ${order_id}`);
+//             }
+//         } else {
+//             console.log(`Payment failed or was cancelled for order ${order_id}.`);
+//         }
         
-        res.status(200).send('Webhook processed.');
+//         res.status(200).send('Webhook processed.');
 
-    } catch (error) {
-        console.error(`Error processing webhook for order ${order_id}:`, error);
-        res.status(200).send('Webhook processed with internal error.');
-    }
-};
+//     } catch (error) {
+//         console.error(`Error processing webhook for order ${order_id}:`, error);
+//         res.status(200).send('Webhook processed with internal error.');
+//     }
+// };
 
 
 module.exports = {
     initiateOrder,
-    confirmPayment,
+    // confirmPayment,
 };
 

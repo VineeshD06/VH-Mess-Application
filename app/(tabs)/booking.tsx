@@ -1,10 +1,9 @@
 import { Colors } from '@/constants/Colors';
 import { getWeeklyMenu } from '@/utils/menuUtils';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, useTheme } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useTheme } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
 
+import { MealKey } from '@/utils/initMenu';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -13,11 +12,9 @@ import {
   Switch,
   Text,
   TouchableOpacity,
-  View,
-  findNodeHandle
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MealKey } from '@/utils/initMenu';
 
 const MENU_KEY = 'weeklyMenu';
 const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -72,7 +69,7 @@ useFocusEffect(
     setExpandedDay(todayLabel);
   }
 
-  }, [menuData])
+  }, [selectedMeal,menuData])
 );
 
 useEffect(() => {
@@ -174,7 +171,7 @@ const changePeople = (day: string, meal: MealKey, delta: number) => {
   const handleSubmit = () => {
     const total = calculateTotalPrice();
     router.push({
-      pathname: '/payment',
+      pathname: '/Order',
       params: { total: total.toString(), bookings: JSON.stringify(bookings) }
     });
   };
@@ -277,7 +274,7 @@ const changePeople = (day: string, meal: MealKey, delta: number) => {
             disabled={calculateTotalPrice() === 0}
             onPress={showConfirmationAlert}
           >
-            <Text style={styles.buttonText}>Proceed to Payment</Text>
+            <Text style={styles.buttonText}>Confirm and Add your Details</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
