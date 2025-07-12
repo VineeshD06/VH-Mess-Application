@@ -75,7 +75,7 @@ export default function Payment() {
        const formData = JSON.stringify({ email, name, contact });
        await AsyncStorage.setItem('user_form_data', formData);
     } catch (err) {
-      console.log('Error saving data', err);
+      console.error('Error saving data', err);
     }
   };
 

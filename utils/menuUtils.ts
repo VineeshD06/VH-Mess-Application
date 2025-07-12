@@ -62,9 +62,14 @@ const fetchWeeklyMenuFromServer = async (): Promise<{ menu: WeeklyMenu; lastUpda
         description: string;
         price: string;
       } = item;
-      // To ensure the key exists 
-      transformedMenu[day_of_week] = transformedMenu[day_of_week] || {}; 
-      transformedMenu[day_of_week][meal_type] = { description, price: parseFloat(price) };
+      transformedMenu[day_of_week] = transformedMenu[day_of_week] || {};
+      if (typeof meal_type === 'string') {
+        transformedMenu[day_of_week][meal_type as MealKey] = { 
+          description, 
+          price: Number(price), 
+          coupons: typeof item.coupons === 'number' ? item.coupons : 0 
+        };
+      }
     });
 
     return { menu: transformedMenu, lastUpdated: data.lastUpdated || new Date().toISOString() };

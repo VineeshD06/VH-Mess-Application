@@ -2,7 +2,7 @@ import { Colors } from "@/constants/Colors";
 import { CUT_OFF, MealDetails, MealKey, dayNames } from "@/utils/initMenu";
 import { getWeeklyMenu } from "@/utils/menuUtils";
 import { useFocusEffect, useTheme } from "@react-navigation/native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 import ErrorFetching from "@/components/ErrorFetching";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -36,6 +36,7 @@ export default function BookingScreen() {
   const mode = isDark ? "dark" : "light";
   const styles = useMemo(() => createStyles(isDark), [isDark]);
   const router = useRouter();
+  const { selectedMeal } = useLocalSearchParams();
 
   const scrollViewRef = useRef<ScrollView>(null);
   const dayRefs = useRef<Record<string, React.RefObject<View>>>(
@@ -68,25 +69,30 @@ export default function BookingScreen() {
         };
       }
       setBookings(initialBookings);
-    }, [menuData])
+      if (selectedMeal && dayNames.includes(todayLabel)) {
+      toggleMeal(todayLabel, selectedMeal as MealKey);
+      setExpandedDay(todayLabel);
+      }
+    }, [selectedMeal,menuData])
   );
 
   useEffect(() => {
     fetchMenu();
   }, []);
 
-  useEffect(() => {
-    setTimeout(() => {
+  useFocusEffect(
+  React.useCallback(() => {
+    const timeout = setTimeout(() => {
       const ref = dayRefs.current[todayLabel];
-      ref?.current?.measureLayout(
-        findNodeHandle(scrollViewRef.current) as number,
-        (x: number, y: number) => {
-          scrollViewRef.current?.scrollTo({ y, animated: true });
-        },
-        () => console.warn("measureLayout error")
-      );
-    }, 300);
-  }, []);
+      ref?.current?.measure((x, y, width, height, pageX, pageY) => {
+        scrollViewRef.current?.scrollTo({ y: y - 100, animated: true });
+      });
+    }, 400); // delay to wait for layout pass
+
+    return () => clearTimeout(timeout);
+  }, [todayLabel])
+);
+
 
   const daysOfThisWeek = dayNames.filter((_, idx) => {
     const dt = new Date(weekStart);
@@ -220,6 +226,7 @@ export default function BookingScreen() {
               key={day}
               style={[styles.daySection, isToday && styles.todayHighlight]}
               ref={dayRefs.current[day]}
+              collapsable={false}
             >
               {past ? (
                 <>
