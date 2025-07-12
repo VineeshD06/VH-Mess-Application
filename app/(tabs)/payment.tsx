@@ -163,7 +163,7 @@ export default function Payment() {
           console.error('Order creation failed:', errorText);
           throw new Error(`Server error: ${res.status} ${errorText}`);
         }
-        console.log('Order created successfully');
+
         order = await res.json();
       } catch (fetchError: any) {
         setBusy(false);
@@ -390,7 +390,7 @@ function createStyles(isDark: boolean) {
     payBtn: {
       width: '100%',
       marginTop: 24,
-      backgroundColor: '#3399cc',
+      backgroundColor: isDark ? Colors.dark.gray333 : Colors.light.grayeee,
       paddingVertical: 14,
       borderRadius: 10,
       alignItems: 'center',

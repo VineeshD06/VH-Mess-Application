@@ -38,7 +38,7 @@ const MenuItem = sequelize.define('MenuItem', {
         allowNull: false,
     },
 }, {
-    timestamps: false,
+    timestamps: true,
 });
 
 const PurchasedCoupon = sequelize.define('PurchasedCoupon', {

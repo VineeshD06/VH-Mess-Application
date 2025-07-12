@@ -30,7 +30,7 @@ const PAGE_TITLES: Record<string, string> = {
   index: 'Book Now',
   explore: 'Weekly Menu',
   History: 'Booking History',
-  booking: 'Book Room',
+  booking: 'Book Meal',
   payment: 'Payment',
   success: 'Payment Success',
 };
@@ -116,13 +116,17 @@ export default function TabLayout() {
             </TouchableOpacity>
           </View>
 
-          <View
+            <View
             style={{
               height: 1,
-              backgroundColor: theme ? '#333' : '#e0e0e0',
-              marginVertical: 8,
+              backgroundColor: theme ? '#e0e0e0' : '#333',
+              shadowColor: theme ? '#000' : '#fff',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.5,
+              shadowRadius: 5,
+              elevation: 10,
             }}
-          />
+            />
 
           {/* Bottom Tabs */}
           <Tabs

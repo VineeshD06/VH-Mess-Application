@@ -24,7 +24,7 @@ const CreateorderController = async (req, res) => {
             key_id: process.env.RAZORPAY_KEY_ID,
             key_secret: process.env.RAZORPAY_KEY_SECRET
         });
-        console.log('order initiated');
+
         const order = await instance.orders.create({
             amount: amount,
             currency: "INR",
@@ -35,7 +35,7 @@ const CreateorderController = async (req, res) => {
                 key2: "value2"
             }
         });
-        console.log(order);
+
 
         res.json(order);
     } catch (err) {
