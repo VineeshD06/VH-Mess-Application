@@ -211,7 +211,6 @@ export default function Success() {
   );
 }
 
-/* ── dynamic styles ───────────────────────────────────── */
 function createStyles(isDark: boolean) {
   return StyleSheet.create({
     container: {
@@ -295,14 +294,17 @@ function createStyles(isDark: boolean) {
       textAlign: 'center',
     },
     backBtn: {
+      width:  300,
       marginTop: 18,
-      backgroundColor: '#3399cc',
+      backgroundColor: isDark ? Colors.dark.gray333 : Colors.light.grayeee,
       paddingVertical: 14,
+      justifyContent: 'center',
+      alignItems:'center',
       paddingHorizontal: 32,
       borderRadius: 10,
     },
     backBtnText: {
-      color: '#fff',
+      color: isDark ? Colors.dark.text : Colors.light.text,
       fontSize: 16,
       fontWeight: '600',
     },

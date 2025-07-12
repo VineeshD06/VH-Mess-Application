@@ -323,7 +323,7 @@ function createStyles(isDark: boolean) {
     payBtn: {
       width: '100%',
       marginTop: 24,
-      backgroundColor: '#3399cc',
+      backgroundColor: isDark ? Colors.dark.gray333 : Colors.light.grayeee,
       paddingVertical: 14,
       borderRadius: 10,
       alignItems: 'center',
