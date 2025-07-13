@@ -184,12 +184,12 @@ const getAllCoupons = async (req, res) => {
 
 const getTodaysSummary = async (req, res) => {
   try {
-    const today = new Date().toISOString().split("T")[0];
-    const hour = new Date().getHours();
+    const nowInIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    const today = nowInIST.toISOString().split("T")[0];
+    const hour = nowInIST.getHours();
     let upcomingMeal = "Dinner";
     if (hour < 10) upcomingMeal = "Breakfast";
     else if (hour < 16) upcomingMeal = "Lunch";
-
     // Get all coupons for today for all meal types
     const mealTypes = ["Breakfast", "Lunch", "Dinner"];
     const summary = {
