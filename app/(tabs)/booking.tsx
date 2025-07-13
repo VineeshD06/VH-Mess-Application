@@ -191,7 +191,7 @@ export default function BookingScreen() {
     setTimeout(() => {
       Alert.alert(
         "Confirm Order",
-        "Proceed to Payment?",
+        "Be 100% and Help us Save Food.",
         [
           { text: "Cancel", style: "cancel" },
           { text: "Submit", onPress: handleSubmit },

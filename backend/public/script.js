@@ -234,11 +234,11 @@ const renderSummary = (summary, upcomingMeal) => {
         }
           </div>
           <div class="border-t border-gray-300 my-3"></div>
-          <p class="text-xs ${titleColor} font-medium">Active / Pending</p>
+          <p class="text-xs ${titleColor} font-medium">Active / Used</p>
           <p class="text-3xl font-bold ${textColor}">${
         summary[meal.type].Active || 0
       } <span class="text-base font-normal text-gray-500">/</span> ${
-        summary[meal.type].Pending || 0
+        summary[meal.type].Used || 0
       }</p>
         </div>
       `;

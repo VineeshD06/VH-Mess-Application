@@ -193,16 +193,16 @@ const getTodaysSummary = async (req, res) => {
     // Get all coupons for today for all meal types
     const mealTypes = ["Breakfast", "Lunch", "Dinner"];
     const summary = {
-      Breakfast: { Active: 0, Pending: 0 },
-      Lunch: { Active: 0, Pending: 0 },
-      Dinner: { Active: 0, Pending: 0 },
+      Breakfast: { Active: 0, Used: 0 },
+      Lunch: { Active: 0, Used: 0 },
+      Dinner: { Active: 0, Used: 0 },
     };
 
     const coupons = await PurchasedCoupon.findAll({
       where: {
         meal_date: today,
         meal_type: { [Op.in]: mealTypes },
-        status: { [Op.in]: ["Active", "Pending"] },
+        status: { [Op.in]: ["Active", "Used"] },
       },
     });
 

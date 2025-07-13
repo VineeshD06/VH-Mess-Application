@@ -1,3 +1,2 @@
-export const BASE_URL = 'http://localhost:3001';
-
-export const RAZORPAY_KEY_ID = ''; 
+// Base Url of backend
+export const BASE_URL = "";
