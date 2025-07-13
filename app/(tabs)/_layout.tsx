@@ -167,8 +167,8 @@ export default function TabLayout() {
               }}
             />
             <Tabs.Screen name="booking" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-            <Tabs.Screen name="payment" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-            <Tabs.Screen name="success/[paymentId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+            <Tabs.Screen name="Order" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+            <Tabs.Screen name="success/[orderID]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
           </Tabs>
         </ThemeProvider>
       </View>

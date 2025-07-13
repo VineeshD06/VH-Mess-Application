@@ -1,11 +1,10 @@
 import { Colors } from '@/constants/Colors';
-import { BASE_URL, RAZORPAY_KEY_ID } from '@/constants/config';
+import { BASE_URL } from '@/constants/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import RazorpayCheckout from 'react-native-razorpay';
 
 type BookingEntry = { day: string; meal: string; qty: number; price: number };
 
@@ -148,108 +147,41 @@ export default function Payment() {
           }),
         });
 
-          const initdata = await initres.json();
-          if (!initres.ok) throw new Error(initdata.message || 'Failed to initiate order.');
-          orderIdFromServer = initdata.order_id;
-          
-        const res = await fetch(`${BASE_URL}/api/payment/create-order`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: toPay })
-        });
-          if (!res.ok) {
-          
-          const errorText = await res.text();
-          console.error('Order creation failed:', errorText);
-          throw new Error(`Server error: ${res.status} ${errorText}`);
-        }
+        const initdata = await initres.json();
+        if (!initres.ok) throw new Error(initdata.message || 'Failed to initiate order.');
+        orderIdFromServer = initdata.order_id;
 
-        order = await res.json();
-      } catch (fetchError: any) {
-        setBusy(false);
-        Alert.alert('Order Creation Failed', fetchError?.message ?? 'Could not create payment order. Please try again.');
-        return;
+        const stored = await AsyncStorage.getItem('transactions');
+        const prev: BookingEntry[] = stored ? JSON.parse(stored) : [];
+
+        const coupons = items.map(it => ({
+          orderid: orderIdFromServer,               // order id 
+          booked:new Date().toDateString(),        //booking date(on which the coupon was purchased)
+          day: it.day,                             // booked for day (e.g. 'Monday')
+          date:getDateFromWeekday(it.day),         // booked for date (ddmmyyyy)
+          meal: it.meal,                            // 'breakfast' | 'lunch' | 'dinner'
+          qty: it.qty,                              //quantity purchased
+          cost: it.price,                           // ₹ for that meal
+          userName: name,                           // entered in form
+        }));
+
+        await AsyncStorage.setItem(
+          'transactions',
+          JSON.stringify([...coupons, ...prev])     // prepend newest on top
+        );
+      } catch (err) {
+        console.warn('Failed to save transactions:', err);
       }
 
-      const options = {
-        description: 'Payment for booking meals',
-        image: 'https://i.imgur.com/3g7nmJC.jpg',
-        currency: order.currency,
-        key: RAZORPAY_KEY_ID, // Replace with Key ID
-        amount: order.amount, 
-        name: 'VH-Mess',
-        order_id: order.id, // From backend Razorpay Orders API
-        prefill: {
-          email: email,
-          contact: contact,
-          name: name
+      router.replace({
+        pathname:'/success/[orderID]',
+        params: {
+          orderID: orderIdFromServer,
+          items: JSON.stringify(items),   
+          total: (toPay/100).toString(),
         },
-        theme: { color: '#3399cc' }
-      };
-      const data = await RazorpayCheckout.open(options);
-      const check = await fetch(`${BASE_URL}/api/payment/verify-payment`, {
-          method: 'POST',
-          headers: { 'Content-Type':'application/json' },
-          body: JSON.stringify({
-            bookings, total: Number(params.total),
-            razorpay_payment_id: data.razorpay_payment_id,
-            razorpay_order_id:   data.razorpay_order_id,
-            razorpay_signature:  data.razorpay_signature
-          })
-        });
-        const verified = await check.json();
-        if(verified.valid==true){
-              try {
-                await fetch(`${BASE_URL}/api/coupons/payment/webhook`, {
-                method : 'POST',
-                headers: { 'Content-Type':'application/json' },
-                body   : JSON.stringify({
-                order_id          : orderIdFromServer,
-                payment_id        : data.razorpay_payment_id,
-                transaction_status: 'SUCCESS',
-                }),
-              });
-
-
-              const stored = await AsyncStorage.getItem('transactions');
-              const prev: BookingEntry[] = stored ? JSON.parse(stored) : [];
-
-              const coupons = items.map(it => ({
-                orderid: orderIdFromServer,               // order id 
-                paymentid:   data.razorpay_payment_id,          //payment id
-                booked:new Date().toDateString(),        //booking date(on which the coupon was purchased)
-                day: it.day,                             // booked for day (e.g. 'Monday')
-                date:getDateFromWeekday(it.day),         // booked for date (ddmmyyyy)
-                meal: it.meal,                            // 'breakfast' | 'lunch' | 'dinner'
-                qty: it.qty,                              //quantity purchased
-                cost: it.price,                           // ₹ for that meal
-                userName: name,                           // entered in form
-              }));
-
-              await AsyncStorage.setItem(
-                'transactions',
-                JSON.stringify([...coupons, ...prev])     // prepend newest on top
-              );
-            } catch (err) {
-              console.warn('Failed to save transactions:', err);
-            }
-
-        router.replace({
-          pathname:'/success/[paymentId]',
-          params: {
-            orderID: orderIdFromServer,
-            paymentId: data.razorpay_payment_id,
-            items: JSON.stringify(items),   
-            total: (toPay/100).toString(),
-          },
-        });
-        }
-        else{
-          Alert.alert('Payment failed');
-        }
-
-        
-        
+      });
+       
 
     } catch (error: any) {
       Alert.alert('Payment failed', error?.message ?? 'Retry');   
@@ -262,6 +194,7 @@ export default function Payment() {
     <View style={styles.container}>
 
       <View style={styles.card}>
+        <Text style={styles.cardTitle}>Order Summary</Text>
         <Text style={styles.label}>Name:</Text>
         <TextInput
           style={styles.input}
@@ -311,7 +244,7 @@ export default function Payment() {
         <View style={styles.divider} />
 
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Total to pay</Text>
+          <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalValue}>₹{(Number(Number(toPay).toFixed(2)) / 100)}</Text>
         </View>
       </View>
@@ -320,7 +253,7 @@ export default function Payment() {
         <ActivityIndicator size="large" color="#3399cc" style={{ marginTop: 24 }} />
       ) : (
         <TouchableOpacity style={styles.payBtn} activeOpacity={0.7} onPress={pay}>
-          <Text style={styles.payText}>Pay ₹{Number(toPay)/100}</Text>
+          <Text style={styles.payText}>Confirm Order</Text>
         </TouchableOpacity>
       )}
     </View>

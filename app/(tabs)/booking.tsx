@@ -182,8 +182,8 @@ export default function BookingScreen() {
   const handleSubmit = () => {
     const total = calculateTotalPrice();
     router.push({
-      pathname: "/payment",
-      params: { total: total.toString(), bookings: JSON.stringify(bookings) },
+      pathname: '/Order',
+      params: { total: total.toString(), bookings: JSON.stringify(bookings) }
     });
   };
 
@@ -314,7 +314,7 @@ export default function BookingScreen() {
             disabled={calculateTotalPrice() === 0}
             onPress={showConfirmationAlert}
           >
-            <Text style={styles.buttonText}>Proceed to Payment</Text>
+            <Text style={styles.buttonText}>Confirm and Add your Details</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

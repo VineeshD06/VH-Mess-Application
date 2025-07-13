@@ -4,7 +4,7 @@ const { initiateOrder, confirmPayment } = require('../controllers/couponControll
 
 router.post('/initiate-order', initiateOrder);
 
-router.post('/payment/webhook', confirmPayment);
+// router.post('/payment/webhook', confirmPayment);
 
 
 module.exports = router;

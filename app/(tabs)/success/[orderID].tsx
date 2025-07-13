@@ -18,8 +18,8 @@ import {
 type Item = { day: string; meal: string; qty: number };
 
 export default function Success() {
-  const {orderID, paymentId, items = '[]', total = '0' } =
-    useLocalSearchParams<{ orderID: string ; paymentId: string; items: string; total: string }>();
+  const {orderID, items = '[]', total = '0' } =
+    useLocalSearchParams<{ orderID: string ;  items: string; total: string }>();
 
   const itemArr: Item[] = JSON.parse(items);
 
@@ -118,7 +118,6 @@ export default function Success() {
       <h1>Payment Receipt</h1>
 
       <p><span class="label">Order ID:</span> ${orderID}</p>
-      <p><span class="label">Transaction ID:</span> ${paymentId}</p>
       <p><span class="label">Date:</span> ${new Date().toLocaleDateString()}</p>
 
       <h2>Items Purchased</h2>
@@ -145,7 +144,7 @@ export default function Success() {
 
       
       const file = await Print.printToFileAsync({ html: html, base64: false });
-      const newUri = file.uri.replace(/[^/]+$/, `Receipt-${paymentId}.pdf`);
+      const newUri = file.uri.replace(/[^/]+$/, `Receipt-${orderID}.pdf`);
       await FileSystem.moveAsync({ from: file.uri, to: newUri });
       await Sharing.shareAsync(newUri);
     } catch (err) {
@@ -159,10 +158,10 @@ export default function Success() {
       <Stack.Screen options={{ headerShown: false }} />
 
       <View style={styles.container}>
-        <Text style={styles.title}>✅ Payment Successful!</Text>
+        <Text style={styles.title}>✅ Order Created!</Text>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>What you bought</Text>
+          <Text style={styles.cardTitle}>What you booked</Text>
 
           <ScrollView>
             {itemArr.map((it, idx) => (
@@ -178,18 +177,18 @@ export default function Success() {
           <View style={styles.divider} />
 
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total Paid</Text>
+            <Text style={styles.totalLabel}>Total to Pay at Counter</Text>
             <Text style={styles.totalValue}>₹{Number(total).toFixed(2)}</Text>
           </View>
 
           <View style={styles.totalRow}>
-            <Text style={styles.subLabel}>Transaction ID</Text>
-            <Text style={styles.idText}>{paymentId}</Text>
+            <Text style={styles.subLabel}>Order ID</Text>
+            <Text style={styles.idText}>{orderID}</Text>
           </View>
         </View>
 
         <Text style={styles.noteText}>
-          * Transaction receipt can only be downloaded from here.
+          * Booking receipt can be downloaded from here.
         </Text>
 
         <TouchableOpacity
