@@ -130,7 +130,7 @@ const fetchCoupons = async (params) => {
       `${API_BASE_URL}/admin/coupons/all?${params.toString()}`,
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     );
     const data = await response.json();
     if (!response.ok)
@@ -150,7 +150,7 @@ const fetchTodaysSummary = async () => {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message);
-    renderSummary(data.summary);
+    renderSummary(data.summary, data.upcomingMeal);
   } catch (error) {
     console.error("Failed to fetch today's summary:", error);
   }
@@ -196,7 +196,7 @@ const handleMarkAsUsed = async (couponId) => {
       {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     );
     const data = await response.json();
     if (!response.ok) throw new Error(data.message);
@@ -208,20 +208,42 @@ const handleMarkAsUsed = async (couponId) => {
   }
 };
 
-const renderSummary = (summary) => {
-  couponSummary.innerHTML = `
-                <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <p class="text-sm text-blue-800 font-medium">Breakfast Coupons</p>
-                    <p class="text-3xl font-bold text-blue-900">${summary.Breakfast || 0}</p>
-                </div>
-                <div class="p-4 bg-green-50 rounded-lg border border-green-200">
-                    <p class="text-sm text-green-800 font-medium">Lunch Coupons</p>
-                    <p class="text-3xl font-bold text-green-900">${summary.Lunch || 0}</p>
-                </div>
-                <div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                    <p class="text-sm text-orange-800 font-medium">Dinner Coupons</p>
-                    <p class="text-3xl font-bold text-orange-900">${summary.Dinner || 0}</p>
-                </div>`;
+const renderSummary = (summary, upcomingMeal) => {
+  const meals = [
+    { type: "Breakfast", color: "blue" },
+    { type: "Lunch", color: "green" },
+    { type: "Dinner", color: "orange" },
+  ];
+
+  couponSummary.innerHTML = meals
+    .map((meal) => {
+      const isUpcoming = upcomingMeal === meal.type;
+      const bgColor = isUpcoming
+        ? `bg-${meal.color}-100 border-4 border-${meal.color}-500 shadow-lg`
+        : `bg-${meal.color}-50 border border-${meal.color}-200`;
+      const textColor = `text-${meal.color}-900`;
+      const titleColor = `text-${meal.color}-800`;
+      return `
+        <div class="p-4 rounded-lg ${bgColor} m-2 flex-1 transition-all duration-300">
+          <div class="flex items-center mb-2 justify-between">
+        <p class="text-sm ${titleColor} font-medium">${meal.type} Coupons</p>
+        ${
+          isUpcoming
+            ? `<span class="ml-2 px-2 py-1 rounded bg-${meal.color}-500 text-white text-xs font-semibold">Upcoming</span>`
+            : ""
+        }
+          </div>
+          <div class="border-t border-gray-300 my-3"></div>
+          <p class="text-xs ${titleColor} font-medium">Active / Pending</p>
+          <p class="text-3xl font-bold ${textColor}">${
+        summary[meal.type].Active || 0
+      } <span class="text-base font-normal text-gray-500">/</span> ${
+        summary[meal.type].Pending || 0
+      }</p>
+        </div>
+      `;
+    })
+    .join("");
 };
 
 const renderCoupons = (coupons) => {
@@ -244,15 +266,31 @@ const renderCoupons = (coupons) => {
                         ${coupons
                           .map(
                             (c) => `<tr>
-                            <td class="px-4 py-2 text-sm font-medium text-gray-900">${c.id}</td>
-                            <td class="px-4 py-2 text-sm text-gray-500">${c.customer_name} (${c.customer_phone})</td>
-                            <td class="px-4 py-2 text-sm text-gray-500">${new Date(c.meal_date).toLocaleDateString()}</td>
-                            <td class="px-4 py-2 text-sm text-gray-500">${c.meal_type}</td>
-                            <td class="px-4 py-2 text-sm font-semibold ${c.status === "Active" ? "text-green-600" : "text-gray-500"}">${c.status}</td>
+                            <td class="px-4 py-2 text-sm font-medium text-gray-900">${
+                              c.id
+                            }</td>
+                            <td class="px-4 py-2 text-sm text-gray-500">${
+                              c.customer_name
+                            } (${c.customer_phone})</td>
+                            <td class="px-4 py-2 text-sm text-gray-500">${new Date(
+                              c.meal_date
+                            ).toLocaleDateString()}</td>
+                            <td class="px-4 py-2 text-sm text-gray-500">${
+                              c.meal_type
+                            }</td>
+                            <td class="px-4 py-2 text-sm font-semibold ${
+                              c.status === "Active"
+                                ? "text-green-600"
+                                : "text-gray-500"
+                            }">${c.status}</td>
                             <td class="px-4 py-2 text-sm">
-                                ${c.status === "Active" ? `<button onclick="handleMarkAsUsed('${c.id}')" class="font-medium text-indigo-600 hover:text-indigo-800">Mark Used</button>` : `<span class="text-gray-400">-</span>`}
+                                ${
+                                  c.status === "Active"
+                                    ? `<button onclick="handleMarkAsUsed('${c.id}')" class="font-medium text-indigo-600 hover:text-indigo-800">Mark Used</button>`
+                                    : `<span class="text-gray-400">-</span>`
+                                }
                             </td>
-                        </tr>`,
+                        </tr>`
                           )
                           .join("")}
                     </tbody>
@@ -325,7 +363,7 @@ const renderMenuAsTable = (menuItems, targetElement) => {
   html += '<thead class="bg-gray-100"><tr>';
   headers.forEach(
     (h) =>
-      (html += `<th class="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">${h}</th>`),
+      (html += `<th class="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">${h}</th>`)
   );
   html += "</tr></thead>";
   html += '<tbody class="bg-white divide-y divide-gray-200">';
@@ -334,7 +372,9 @@ const renderMenuAsTable = (menuItems, targetElement) => {
     headerKeys.forEach((key) => {
       const value = row[key];
       const isDay = key === "DayOfWeek";
-      html += `<td class="px-2 py-2 whitespace-normal ${isDay ? "font-semibold text-gray-900" : "text-gray-600"}">${value || ""}</td>`;
+      html += `<td class="px-2 py-2 whitespace-normal ${
+        isDay ? "font-semibold text-gray-900" : "text-gray-600"
+      }">${value || ""}</td>`;
     });
     html += "</tr>";
   });
@@ -394,7 +434,7 @@ const handleFileSelect = (event) => {
 
       if (menuToPreview.length === 0) {
         throw new Error(
-          "No valid menu items found in the file. Check your headers and data.",
+          "No valid menu items found in the file. Check your headers and data."
         );
       }
 
@@ -422,8 +462,7 @@ const checkLoginStatus = async () => {
     if (response.ok) {
       showView("dashboard");
       setActiveTab("coupons");
-      await fetchTodaysSummary();             // ✅ today's counts
-      await fetchUpcomingSummaryData();
+      await fetchTodaysSummary();
       document.getElementById("date-filter").value = new Date()
         .toISOString()
         .slice(0, 10);
@@ -449,47 +488,3 @@ tabUpload.addEventListener("click", () => setActiveTab("upload"));
 menuFileInput.addEventListener("change", handleFileSelect);
 finalUploadBtn.addEventListener("click", handleFinalUpload);
 document.addEventListener("DOMContentLoaded", checkLoginStatus);
-
-const fetchUpcomingSummaryData = async () => {
- const token = localStorage.getItem("authToken");
-  const today = new Date().toISOString().split("T")[0];
-  const hour = new Date().getHours();
-  let upcomingMeal = "Dinner";
-  if (hour < 10) upcomingMeal = "Breakfast";
-  else if (hour < 16) upcomingMeal = "Lunch";
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/admin/coupons/all?date=${today}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message);
-
-    const coupons = data.coupons || [];
-    const filtered = coupons.filter(
-      (c) =>
-        c.meal_type === upcomingMeal &&
-        (c.status === "Active" || c.status === "Pending")
-    );
-
-    const summary = { Active: 0, Pending: 0 };
-    filtered.forEach((c) => {
-      summary[c.status] = (summary[c.status] || 0) + 1;
-    });
-
-    // Clear old upcoming summary (only the purple card)
-    const existingCards = couponSummary.querySelectorAll(".bg-purple-50");
-    existingCards.forEach((el) => el.remove());
-
-    const extraSummaryHTML = `
-      <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
-          <p class="text-sm text-purple-800 font-medium">Upcoming: ${upcomingMeal}</p>
-          <p class="text-lg text-purple-700 font-semibold">Active: ${summary.Active}</p>
-          <p class="text-lg text-purple-700 font-semibold">Pending: ${summary.Pending}</p>
-      </div>`;
-    couponSummary.insertAdjacentHTML("beforeend", extraSummaryHTML);
-  } catch (err) {
-    console.error("Upcoming meal summary fetch failed:", err.message);
-  }
-};
