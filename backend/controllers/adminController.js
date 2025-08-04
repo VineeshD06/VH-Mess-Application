@@ -184,39 +184,35 @@ const getAllCoupons = async (req, res) => {
 
 const getTodaysSummary = async (req, res) => {
   try {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toISOString().split("T")[0];
+    const hour = new Date().getHours();
+    let upcomingMeal = "Dinner";
+    if (hour < 10) upcomingMeal = "Breakfast";
+    else if (hour < 16) upcomingMeal = "Lunch";
 
-    const summary = await PurchasedCoupon.findAll({
-      attributes: [
-        "meal_type",
-        [sequelize.fn("COUNT", sequelize.col("id")), "count"],
-      ],
+    // Get all coupons for today for all meal types
+    const mealTypes = ["Breakfast", "Lunch", "Dinner"];
+    const summary = {
+      Breakfast: { Active: 0, Pending: 0 },
+      Lunch: { Active: 0, Pending: 0 },
+      Dinner: { Active: 0, Pending: 0 },
+    };
+
+    const coupons = await PurchasedCoupon.findAll({
       where: {
         meal_date: today,
-        status: { [Op.ne]: "Pending" },
-      },
-      group: ["meal_type"],
-    });
-
-    const pendingCount = await PurchasedCoupon.count({
-      where: {
-        meal_date: today,
-        status: "Pending",
+        meal_type: { [Op.in]: mealTypes },
+        status: { [Op.in]: ["Active", "Pending"] },
       },
     });
 
-    const counts = { Breakfast: 0, Lunch: 0, Dinner: 0 };
-    summary.forEach((item) => {
-      const mealType = item.get("meal_type");
-      const count = item.get("count");
-      if (counts.hasOwnProperty(mealType)) {
-        counts[mealType] = parseInt(count, 10);
+    coupons.forEach((c) => {
+      if (summary[c.meal_type] && summary[c.meal_type][c.status] !== undefined) {
+        summary[c.meal_type][c.status]++;
       }
     });
 
-    counts.Pending = pendingCount;
-
-    res.json({ success: true, summary: counts });
+    res.json({ success: true, summary, upcomingMeal });
   } catch (error) {
     console.error("Error fetching today's summary:", error);
     res.status(500).json({ success: false, message: "Server error." });
