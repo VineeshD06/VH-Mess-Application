@@ -243,6 +243,28 @@ const markCouponAsUsed = async (req, res) => {
   }
 };
 
+const markPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [affectedRows] = await PurchasedCoupon.update(
+      { status: "Active" },
+      { where: { id: id, status: "Pending" } },
+    );
+    if (affectedRows > 0) {
+      res.json({ success: true, message: `Coupon ${id} marked as Active.` });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: `Coupon ${id} not found or is not Pending.`,
+      });
+    }
+  } catch (error) {
+    console.error("Error marking coupon as Active:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+};
+
+
 module.exports = {
   loginAdmin,
   uploadMenu,
@@ -251,4 +273,5 @@ module.exports = {
   verifyToken,
   markCouponAsUsed,
   getCurrentAdminMenu,
-};
+  markPayment,
+};    

@@ -37,6 +37,11 @@ const MenuItem = sequelize.define('MenuItem', {
         defaultValue: true,
         allowNull: false,
     },
+    order_type: {
+        type: DataTypes.ENUM('Dine-In', 'Takeaway'),
+        allowNull: false,
+    },
+
 }, {
     timestamps: true,
 });
@@ -69,6 +74,10 @@ const PurchasedCoupon = sequelize.define('PurchasedCoupon', {
     },
     meal_type: {
         type: DataTypes.ENUM('Breakfast', 'Lunch', 'Dinner'),
+        allowNull: false,
+    },
+    order_type: {
+        type: DataTypes.ENUM('Dine-In', 'Takeaway'),
         allowNull: false,
     },
     status: {

@@ -207,6 +207,25 @@ const handleMarkAsUsed = async (couponId) => {
     displayStatus(error.message, true);
   }
 };
+const handleMarkPayment = async (couponId) => {
+  const token = localStorage.getItem("authToken");
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/admin/coupons/payment/${couponId}`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message);
+    displayStatus(data.message);
+    fetchCoupons(lastUsedParams);
+    fetchTodaysSummary();
+  } catch (error) {
+    displayStatus(error.message, true);
+  }
+};
 
 const renderSummary = (summary, upcomingMeal) => {
   const meals = [
@@ -259,6 +278,7 @@ const renderCoupons = (coupons) => {
                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Meal</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Order Type</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                     </tr></thead>
@@ -266,29 +286,14 @@ const renderCoupons = (coupons) => {
                         ${coupons
                           .map(
                             (c) => `<tr>
-                            <td class="px-4 py-2 text-sm font-medium text-gray-900">${
-                              c.id
-                            }</td>
-                            <td class="px-4 py-2 text-sm text-gray-500">${
-                              c.customer_name
-                            } (${c.customer_phone})</td>
-                            <td class="px-4 py-2 text-sm text-gray-500">${new Date(
-                              c.meal_date
-                            ).toLocaleDateString()}</td>
-                            <td class="px-4 py-2 text-sm text-gray-500">${
-                              c.meal_type
-                            }</td>
-                            <td class="px-4 py-2 text-sm font-semibold ${
-                              c.status === "Active"
-                                ? "text-green-600"
-                                : "text-gray-500"
-                            }">${c.status}</td>
+                            <td class="px-4 py-2 text-sm font-medium text-gray-900">${c.id}</td>
+                            <td class="px-4 py-2 text-sm text-gray-500">${c.customer_name} (${c.customer_phone})</td>
+                            <td class="px-4 py-2 text-sm text-gray-500">${new Date(c.meal_date).toLocaleDateString()}</td>
+                            <td class="px-4 py-2 text-sm text-gray-500">${c.meal_type}</td>
+                            <td class="px-4 py-2 text-sm text-gray-500">${c.order_type}</td>
+                            <td class="px-4 py-2 text-sm font-semibold ${c.status === "Active" ? "text-green-600" : "text-gray-500"}">${c.status}</td>
                             <td class="px-4 py-2 text-sm">
-                                ${
-                                  c.status === "Active"
-                                    ? `<button onclick="handleMarkAsUsed('${c.id}')" class="font-medium text-indigo-600 hover:text-indigo-800">Mark Used</button>`
-                                    : `<span class="text-gray-400">-</span>`
-                                }
+                                ${c.status === "Active" ? `<button onclick="handleMarkAsUsed('${c.id}')" class="font-medium text-indigo-600 hover:text-indigo-800">Mark Used</button>`: c.status === "Pending"?`<button onclick="handleMarkPayment('${c.id}')" class="font-medium text-blue-600 hover:text-blue-800">Verify Payment</button>` : `<span class="text-gray-400">-</span>`}
                             </td>
                         </tr>`
                           )

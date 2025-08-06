@@ -20,6 +20,7 @@ type Meal = {
   receiptUrl?: string;
   userName?: string;
   booked:string;
+  order_type:string;
 };
 
 export default function History() {
@@ -107,6 +108,7 @@ useFocusEffect(
             <p><span class="label">Order ID:</span> ${item.orderid}</p>
             <p><span class="label">Booked For:</span> ${item.day} ${item.date} </p>
             <p><span class="label">Meal:</span> ${item.meal}</p>
+            <p><span class="label">order Type:</span> ${item.order_type}</p>
             <p><span class="label">Each Meal Cost:</span> ₹${item.cost}</p>
             <p><span class="label">Amount Paid:</span> ₹${item.cost*item.qty}</p>
             <p><span class="label">Booked On:</span> ${item.booked}</p>

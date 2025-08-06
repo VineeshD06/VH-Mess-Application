@@ -190,11 +190,11 @@ export default function BookingScreen() {
   const showConfirmationAlert = () => {
     setTimeout(() => {
       Alert.alert(
-        "Confirm Order",
+        "Confirm Selection",
         "Be 100% and Help us Save Food.",
         [
           { text: "Cancel", style: "cancel" },
-          { text: "Submit", onPress: handleSubmit },
+          { text: "Confirm", onPress: handleSubmit },
         ],
         { cancelable: true }
       );

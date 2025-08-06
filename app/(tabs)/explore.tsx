@@ -48,40 +48,36 @@ export default function ExploreScreen() {
         >
           {Object.entries(menuData).map(([day, meals]) => (
             <View key={day} style={styles.card}>
-              <Text style={styles.day}>{day}</Text>
-              {(["Breakfast", "Lunch", "Dinner"] as MealKey[]).map(
-                (mealKey, idx) => (
+              <Text style={styles.day}>{day}</Text>              
+              {(["Breakfast", "Lunch", "Dinner"] as MealKey[]).map((mealKey, idx, arr) => {
+                const meal = meals[mealKey];
+                if (!meal) return null; // 🧹 Skip rendering if null
+
+                const isLast = arr.slice(idx + 1).every(k => !meals[k]);
+
+                return (
                   <React.Fragment key={mealKey}>
                     <View style={styles.row}>
                       <Image
-                        source={
-                          mealKey == "Breakfast"
-                            ? mealImages.Breakfast
-                            : mealKey == "Lunch"
-                            ? mealImages.Lunch
-                            : mealImages.Dinner
-                        }
+                        source={mealImages[mealKey]}
                         style={styles.image}
-                      ></Image>
+                      />
                       <View style={{ flex: 1 }}>
                         <Text style={styles.label}>
                           {mealKey.charAt(0).toUpperCase() + mealKey.slice(1)}
                         </Text>
-                        <Text style={styles.desc}>
-                          {meals[mealKey].description}
-                        </Text>
+                        <Text style={styles.desc}>{meal.description}</Text>
                       </View>
-
                       <View style={styles.priceContainer}>
-                        <Text style={styles.price}>
-                          ₹{meals[mealKey].price}
-                        </Text>
+                        <Text style={styles.price}>₹{meal.price}</Text>
                       </View>
                     </View>
-                    {idx < 2 && <View style={styles.divider} />}
+
+                    {!isLast && <View style={styles.divider} />}
                   </React.Fragment>
-                )
-              )}
+                );
+              })}
+
             </View>
           ))}
         </ScrollView>

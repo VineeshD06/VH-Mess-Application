@@ -3,10 +3,10 @@ import { BASE_URL } from '@/constants/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Easing, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-type BookingEntry = { day: string; meal: string; qty: number; price: number };
+type BookingEntry = { day: string; meal: string; qty: number; price: number; order_type:string };
 
 
 export default function Payment() {
@@ -35,11 +35,11 @@ export default function Payment() {
 
       if (typeof val === 'object') {
         const { qty, price } = val as { qty: number; price: number };
-        if (qty > 0) arr.push({ day, meal: mealKey, qty, price });
+        if (qty > 0) arr.push({ day, meal: mealKey, qty, price, order_type: orderType });
       }
 
       if (typeof val === 'number' && val > 0) {
-        arr.push({ day, meal: mealKey, qty: val, price: 0 });
+        arr.push({ day, meal: mealKey, qty: val, price: 0,order_type: orderType });
       }
     });
   });
@@ -50,7 +50,9 @@ export default function Payment() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [contact, setContact] = useState('');
-
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const orderOptions = ['Dine-In', 'Takeaway'];
+  const [orderType, setOrderType] = useState<'Dine-In' | 'Takeaway'>('Dine-In');
 
   useEffect(() => {
     const loadFormData = async () => {
@@ -126,7 +128,6 @@ export default function Payment() {
 
     try {
       setBusy(true);
-      let order;
       try {
         
         const selections = items.flatMap(it =>
@@ -144,6 +145,7 @@ export default function Payment() {
             customerEmail: email,
             customerPhone: contact,
             selections,
+            order_type:orderType
           }),
         });
 
@@ -163,6 +165,7 @@ export default function Payment() {
           qty: it.qty,                              //quantity purchased
           cost: it.price,                           // ₹ for that meal
           userName: name,                           // entered in form
+          order_type:orderType,
         }));
 
         await AsyncStorage.setItem(
@@ -190,7 +193,26 @@ export default function Payment() {
       }
   }
 
+  const dropdownAnimation = useRef(new Animated.Value(0)).current;
+
+  const toggleDropdown = () => {
+  setDropdownVisible(!dropdownVisible);
+  Animated.timing(dropdownAnimation, {
+    toValue: dropdownVisible ? 0 : 1,
+    duration: 200,
+    easing: Easing.ease,
+    useNativeDriver: true,
+  }).start();
+  };
+
+  const dropdownTranslateY = dropdownAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-10, 0],
+  });
+
+
   return (
+     <ScrollView contentContainerStyle={styles.scrollContent}>
     <View style={styles.container}>
 
       <View style={styles.card}>
@@ -222,6 +244,52 @@ export default function Payment() {
           keyboardType="phone-pad"
           onChangeText={text => setContact(text)}
         />
+        <Text style={styles.label}>Order Type:</Text>
+          <TouchableOpacity
+            style={styles.input}
+            onPress={toggleDropdown}
+            activeOpacity={0.8}
+          >
+            <Text style={{ color: isDark ? Colors.dark.text : Colors.light.text }}>
+              {orderType}
+            </Text>
+          </TouchableOpacity>
+
+          {dropdownVisible && (
+            <Animated.View
+              style={[
+                styles.dropdown,
+                {
+                  opacity: dropdownAnimation,
+                  transform: [{ translateY: dropdownTranslateY }],
+                },
+              ]}
+            >
+              {orderOptions.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  onPress={() => {
+                    setOrderType(option as 'Dine-In' | 'Takeaway');
+                    setDropdownVisible(false);
+                    dropdownAnimation.setValue(0); // Reset animation state
+                  }}
+                  style={[
+                    styles.dropdownItem,
+                    option === orderType && styles.dropdownItemSelected,
+                  ]}
+                >
+                  <Text
+                    style={{
+                      color: isDark ? Colors.dark.text : '#333',
+                      fontWeight: option === orderType ? '600' : '400',
+                    }}
+                  >
+                    {option}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </Animated.View>
+          )}
 
             <View style={styles.divider} />
 
@@ -257,6 +325,7 @@ export default function Payment() {
         </TouchableOpacity>
       )}
     </View>
+    </ScrollView>
   );
 }
 
@@ -352,5 +421,36 @@ function createStyles(isDark: boolean) {
     marginTop: 50,
     color: isDark ? Colors.dark.text : Colors.light.text,
   },
+  dropdown: {
+    backgroundColor: isDark ? '#1e1e2e' : '#f5f7ff', // new background color
+    borderWidth: 1,
+    borderColor: isDark ? '#444' : '#bbb',
+    borderRadius: 10,
+    marginTop: 4,
+    marginBottom: 16,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    paddingVertical: 4,
+  },
+
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: isDark ? '#333' : '#e2e6f0',
+  },
+
+  dropdownItemSelected: {
+    backgroundColor: isDark ? '#2d2d44' : '#dbeafe', // highlight color
+    borderRadius: 8,
+  },
+  scrollContent: {
+  paddingBottom: 40,
+  },
+
+
   });
 }
